@@ -19,12 +19,27 @@
 
 (def snippets (object/create ::lt-snippets))
 
+(defn get-tabstops[snippet]
+  (into #{} (filter #(not (= % "$0")) (re-seq #"\$\d+" snippet))))
 
-(defn snippet-to-form [snippet]
-  (let [vars (re-seq #"\$\d+" snippet)
-        res (s/replace snippet #"\$0" "")]
-    (s/replace res #"\$1" (str"<input type='text' class='snipvar-" "1" "'" "/>"))))
+(defn tabstop-to-input [tabstop]
+  (str "<input type='text' class='snipvar-" (s/replace tabstop "$" "") "'" "/>"))
 
+(defn tabstop-to-mirror [tabstop]
+  (str "<input type='text' disabled='disabled' class='snipvar-" (s/replace tabstop "$" "") "'" "/>"))
+
+
+(defn snippet-to-form [snippet tabstops]
+  (loop [snippet (s/replace snippet "$0" "")
+         tabstops tabstops]
+    (cond
+     (empty? tabstops) snippet
+     :else (let [tabstop (first tabstops)]
+             (recur
+              (s/replace
+               (s/replace-first snippet tabstop (tabstop-to-input tabstop))
+               tabstop (tabstop-to-mirror tabstop))
+              (rest tabstops))))))
 
 ;; Jeepus this is really bad, there must be a better way ?
 (defn text-width [text]
@@ -47,6 +62,7 @@
           :triggers #{:remove.snippet.form}
           :reaction (fn [this]
                       (.clear (:mark @this))
+                      (object/raise this :clear)
                       (object/destroy! this)))
 
 
@@ -59,9 +75,6 @@
   (reduce
     (fn [acc [k v]] (s/replace acc (str k) (str v)))
     text m))
-
-(map-replace {"$1" "dill" "$2" "dall"} "My stupid string with $1 and $2")
-
 
 (defn resize-form-input [el]
   (let [v (.-value el)]
@@ -82,12 +95,17 @@
             result (map-replace kv snippet)]
         (object/raise this :remove.snippet.form)
         (editor/focus ed)
-        (editor/insert-at-cursor ed result)
-        (find-line-containing ed "$0" (fn [line-no]
+        (let [pos (editor/->cursor ed)]
+          (editor/insert-at-cursor ed result)
+          (when-not (.contains result "$0")
+            (editor/set-selection ed pos (editor/->cursor ed))
+            (editor/indent-selection ed "smart"))
+          (find-line-containing ed "$0" (fn [line-no]
                                         (let [ch (.indexOf (editor/line ed line-no) "$0")]
-                                          (editor/replace ed {:line line-no :ch ch} {:line line-no :ch (+ 2 ch)} "")
-                                          (editor/move-cursor ed {:line line-no :ch ch}))))))))
-
+                                          (editor/replace ed {:line line-no :ch ch} {:line line-no :ch (+ 2 ch)} "var hello = 0;")
+                                          (editor/set-selection ed pos (editor/->cursor ed))
+                                          (editor/indent-selection ed "smart")
+                                          (editor/move-cursor ed {:line line-no :ch ch})))))))))
 
 (object/object* ::inline-form
                 :triggers #{:click :clear!}
@@ -95,11 +113,15 @@
                 :init (fn [this info]
                         (when-let [ed (editor/->cm-ed (:ed info))]
                           (let [content (snippet-form this info)
-                                line (-> info :pos :line)]
-                            (dom/html content (snippet-to-form (-> info :item :snippet)))
-                            (dom/on (dom/$ :input content) "keyup" (fn [ev]
-                                                                     (resize-form-input (.-target ev))
-                                                                     (set-mirrored-values content (.-target ev))))
+                                line (-> info :pos :line)
+                                snippet (-> info :item :snippet)]
+                            (dom/html content (snippet-to-form snippet (get-tabstops snippet)))
+                            (doseq [el (dom/$$ :input content)]
+                              ;;(resize-form-input el)
+                              (dom/on el "keyup" (fn [ev]
+                                                   (resize-form-input (.-target ev))
+                                                   (set-mirrored-values content (.-target ev)))))
+
                             (dom/on content "keydown" (fn [ev]
                                                         (let [kc (.-keyCode ev)]
                                                         (cond
@@ -111,9 +133,11 @@
 
                             (object/merge! this (assoc info
                                                   :mark (editor/bookmark ed
-                                                                         {:line line}
+                                                                         {:line line :ch (-> info :pos :ch)}
                                                                          {:widget content
                                                                           :insertLeft true})))
+                            (doseq [el (dom/$$ :input content)]
+                              (resize-form-input el))
                             content))))
 
 

@@ -1,8 +1,12 @@
+div.snippet-form {
+  /*background-color: red;*/
+}
+
 div.snippet-form input {
   font-size: inherit;
   font-family: inherit;
   color: inherit;
   padding: 0 2px 0 2px;
-  margin: 0;
-  /*background: transparent*/;
+  margin: 2;
+  /*background: transparent;*/
 }
