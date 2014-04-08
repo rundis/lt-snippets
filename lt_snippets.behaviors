@@ -1,0 +1,4 @@
+{:+ {:app [(:lt.objs.plugins/load-js "lt_snippets_compiled.js")
+           (:lt.objs.plugins/load-css "snippets.css")]
+     :lt-snippets []
+     :inline.snippet.form [:lt.plugins.lt-snippets/remove-snippet-form]}}

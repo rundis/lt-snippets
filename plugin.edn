@@ -1,0 +1,6 @@
+{:name "lt_snippets"
+ :version "0.0.1"
+ :author "Magnus Rundberget"
+ :source ""
+ :desc "Snippets in textmate/yasnippets style for LightTable"
+ :behaviors "lt_snippets.behaviors"}
