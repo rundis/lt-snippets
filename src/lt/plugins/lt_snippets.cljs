@@ -23,10 +23,10 @@
   (into #{} (filter #(not (= % "$0")) (re-seq #"\$\d+" snippet))))
 
 (defn tabstop-to-input [tabstop]
-  (str "<input type='text' class='snipvar-" (s/replace tabstop "$" "") "'" "/>"))
+  (str "<span contenteditable='true' data-ph='" (s/replace tabstop "$" "#") "' class='snipvar-" (s/replace tabstop "$" "") "'></span>"))
 
 (defn tabstop-to-mirror [tabstop]
-  (str "<input type='text' disabled='disabled' class='snipvar-" (s/replace tabstop "$" "") "'" "/>"))
+  (str "<span class='snipvar-" (s/replace tabstop "$" "") "'" "></span>"))
 
 
 (defn snippet-to-form [snippet tabstops]
@@ -40,15 +40,6 @@
                (s/replace-first snippet tabstop (tabstop-to-input tabstop))
                tabstop (tabstop-to-mirror tabstop))
               (rest tabstops))))))
-
-;; Jeepus this is really bad, there must be a better way ?
-(defn text-width [text]
-  (let [el (first (dom/make (str "<span style='position:absolute;visibility:hidden'>" text "</span>")))]
-    (dom/append (dom/$ :div.snippet-form) el)
-    (let [width (dom/width el)]
-      (dom/remove el)
-      (+ width 5))))
-
 
 (defui snippet-form [this info]
   [:div.snippet-form "Snippet content"]
@@ -76,22 +67,18 @@
     (fn [acc [k v]] (s/replace acc (str k) (str v)))
     text m))
 
-(defn resize-form-input [el]
-  (let [v (.-value el)]
-    (set! (.-width (.-style el)) (text-width v))))
 
 (defn set-mirrored-values [form el]
   (let [c (.-className el)
-        v (.-value el)]
-    (doseq [mirr (rest (dom/$$ (str "input." c)  form))]
-      (set! (.-value mirr) v)
-      (resize-form-input mirr))))
+        v (dom/html el)]
+    (doseq [mirr (rest (dom/$$ (str "span." c)  form))]
+      (dom/html mirr v))))
 
 (defn complete-snippet [this ed form]
-  (let [inputs (dom/$$ :input form)
+  (let [inputs (dom/$$ :span form)
         snippet (->@this :item :snippet)]
     (when inputs
-      (let [kv (into {} (map #(hash-map (s/replace (.-className %) #"snipvar-" "$") (.-value %)) inputs))
+      (let [kv (into {} (map #(hash-map (s/replace (.-className %) #"snipvar-" "$") (dom/html %)) inputs))
             result (map-replace kv snippet)]
         (object/raise this :remove.snippet.form)
         (editor/focus ed)
@@ -116,10 +103,8 @@
                                 line (-> info :pos :line)
                                 snippet (-> info :item :snippet)]
                             (dom/html content (snippet-to-form snippet (get-tabstops snippet)))
-                            (doseq [el (dom/$$ :input content)]
-                              ;;(resize-form-input el)
+                            (doseq [el (dom/$$ :span content)]
                               (dom/on el "keyup" (fn [ev]
-                                                   (resize-form-input (.-target ev))
                                                    (set-mirrored-values content (.-target ev)))))
 
                             (dom/on content "keydown" (fn [ev]
@@ -136,8 +121,7 @@
                                                                          {:line line :ch (-> info :pos :ch)}
                                                                          {:widget content
                                                                           :insertLeft true})))
-                            (doseq [el (dom/$$ :input content)]
-                              (resize-form-input el))
+                            (dom/focus (dom/$ :span content))
                             content))))
 
 
@@ -172,14 +156,18 @@
 
 (defn insert-snippet [item]
   (let [ed (pool/last-active)
-        pos (editor/->cursor ed)]
-    (let [form-ui (object/create ::inline-form {:ed ed :item item :pos pos})]
-      (dom/focus(dom/$ :input)))))
-;;(editor/line-widget ed (:line pos) (snippet-form item))))
-;;     (editor/insert-at-cursor ed (:snippet item))
-;;     (editor/set-selection ed pos (editor/->cursor ed))
-;;     (editor/indent-selection ed "smart")))
-
+        pos (editor/->cursor ed)
+        snippet (:snippet item)]
+    (if (empty? (get-tabstops snippet))
+      (do
+        (editor/insert-at-cursor ed snippet)
+        (find-line-containing ed "$0" (fn [line-no]
+                                        (let [ch (.indexOf (editor/line ed line-no) "$0")]
+                                          (editor/replace ed {:line line-no :ch ch} {:line line-no :ch (+ 2 ch)} "")
+                                          (editor/set-selection ed pos (editor/->cursor ed))
+                                          (editor/indent-selection ed "smart")
+                                          (editor/move-cursor ed {:line line-no :ch ch})))))
+      (object/create ::inline-form {:ed ed :item item :pos pos}))))
 
 
 (cmd/command {:command :snippet.select
@@ -194,4 +182,3 @@
               :hidden true
               :exec (fn [key]
                       (insert-snippet (snippet-by-key key)))})
-

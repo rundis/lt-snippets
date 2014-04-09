@@ -2,6 +2,12 @@ div.snippet-form {
   /*background-color: red;*/
 }
 
+div.snippet-form span[contenteditable=true] {
+  border-bottom:1px dashed darkgray;
+}
+
+div.snippet-form span[contenteditable=true]:empty:not(:focus):before {content:attr(data-ph);}
+
 div.snippet-form input {
   font-size: inherit;
   font-family: inherit;
