@@ -8,6 +8,7 @@
             [lt.objs.sidebar.command :as scmd]
             [lt.objs.files :as files]
             [lt.util.dom :as dom]
+            [lt.objs.keyboard :as keyboard]
             [clojure.string :as s])
   (:require-macros [lt.macros :refer [defui behavior]]))
 
@@ -89,10 +90,11 @@
             (editor/indent-selection ed "smart"))
           (find-line-containing ed "$0" (fn [line-no]
                                         (let [ch (.indexOf (editor/line ed line-no) "$0")]
-                                          (editor/replace ed {:line line-no :ch ch} {:line line-no :ch (+ 2 ch)} "var hello = 0;")
+                                          (editor/replace ed {:line line-no :ch ch} {:line line-no :ch (+ 2 ch)} "")
                                           (editor/set-selection ed pos (editor/->cursor ed))
                                           (editor/indent-selection ed "smart")
                                           (editor/move-cursor ed {:line line-no :ch ch})))))))))
+
 
 (object/object* ::inline-form
                 :triggers #{:click :clear!}
@@ -130,12 +132,40 @@
 (defn read-snippets []
   (->
    (filter #(= (files/ext % ) "edn") (files/ls-sync snippet-dir))
-   ((partial map #(cljs.reader/read-string (files/bomless-read (files/join snippet-dir %)))))
-   ((partial mapcat identity))))
+   ((partial map #(cljs.reader/read-string (files/bomless-read (files/join snippet-dir %)))))))
+
+(defn degroup-snippets [snippets]
+  (mapcat identity (map (fn [snip] (:snippets snip)) snippets)))
+
+(defn snippet-by-key [key snippets]
+  (some #(when (= key (:key %)) %)
+        (degroup-snippets snippets)))
 
 
-(defn snippet-by-key [key]
-  (some #(when (= key (:key %)) %) (read-snippets)))
+(defn snippet-by
+  ([key snippets]
+   (snippet-by-key key snippets))
+  ([key modes snippets]
+   (snippet-by-key key (filter #(contains? modes (keyword (:mode %))) snippets))))
+
+
+(defn get-snippet-shortcuts []
+  (mapcat identity (map (fn [keygroup]
+                         (map (fn [km]
+                                (hash-map :tag (first keygroup)
+                                          :shortcut (first km)
+                                          :key (last (first (first (rest km))))))
+                              (filter #(.contains (str %) ":snippet.by_key") (first (rest keygroup)))))
+                       (seq @keyboard/keys))))
+
+
+(defn get-snippets []
+  (let [snippets (degroup-snippets(read-snippets))
+        shortcuts (get-snippet-shortcuts)]
+    (map (fn [snip]
+           (assoc snip :shortcut (when-let [sc (some #(if (= (:key snip) (:key %)) %)  shortcuts)] (:shortcut sc))))
+         snippets)))
+
 
 
 ;; **************** SELECTING SNIPPETS ******************
@@ -150,24 +180,25 @@
 
 
 (def add-selector
-  (selector {:items read-snippets
+  (selector {:items get-snippets
              :key :key
-             :transform #(str "<p>" %3 "</p><p class='binding'>" (:name %4) "</p>")}))
+             :transform #(str "<p>" (:name %4) "</p><p class='binding'>" (str %3 " " (:shortcut %4)) "</p>")}))
 
 (defn insert-snippet [item]
-  (let [ed (pool/last-active)
-        pos (editor/->cursor ed)
-        snippet (:snippet item)]
-    (if (empty? (get-tabstops snippet))
-      (do
-        (editor/insert-at-cursor ed snippet)
-        (find-line-containing ed "$0" (fn [line-no]
-                                        (let [ch (.indexOf (editor/line ed line-no) "$0")]
-                                          (editor/replace ed {:line line-no :ch ch} {:line line-no :ch (+ 2 ch)} "")
-                                          (editor/set-selection ed pos (editor/->cursor ed))
-                                          (editor/indent-selection ed "smart")
-                                          (editor/move-cursor ed {:line line-no :ch ch})))))
-      (object/create ::inline-form {:ed ed :item item :pos pos}))))
+  (when item
+    (let [ed (pool/last-active)
+          pos (editor/->cursor ed)
+          snippet (:snippet item)]
+      (if (empty? (get-tabstops snippet))
+        (do
+          (editor/insert-at-cursor ed snippet)
+          (find-line-containing ed "$0" (fn [line-no]
+                                          (let [ch (.indexOf (editor/line ed line-no) "$0")]
+                                            (editor/replace ed {:line line-no :ch ch} {:line line-no :ch (+ 2 ch)} "")
+                                            (editor/set-selection ed pos (editor/->cursor ed))
+                                            (editor/indent-selection ed "smart")
+                                            (editor/move-cursor ed {:line line-no :ch ch})))))
+        (object/create ::inline-form {:ed ed :item item :pos pos})))))
 
 
 (cmd/command {:command :snippet.select
@@ -181,7 +212,11 @@
               :desc "Invoke snippet by its key"
               :hidden true
               :exec (fn [key]
-                      (insert-snippet (snippet-by-key key)))})
+                      (let [ed (pool/last-active)
+                            snippets (read-snippets)]
+                        (if ed
+                          (insert-snippet (snippet-by key (:tags @ed) snippets))
+                          (insert-snippet (snippet-by key snippets)))))})
 
 (defn ->token [ed]
   (editor/->token ed (editor/->cursor ed)))
@@ -192,12 +227,12 @@
     (editor/replace ed {:line line :ch (:start token)} {:line line :ch (:stop token)} "")))
 
 (defn snippet-by-token [ed]
-  (snippet-by-key (:string (->token ed))))
+  (snippet-by (:string (->token ed)) (:tags @ed) (read-snippets)))
 
 (cmd/command {:command :snippet.by_token
               :desc "Expand snippet by editor token"
               :exec (fn []
                       (when-let [ed (pool/last-active)]
-                        (let [item (snippet-by-token ed)]
+                        (when-let [item (snippet-by-token ed)]
                           (->clear-token ed)
                           (insert-snippet item))))})

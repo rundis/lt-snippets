@@ -3,7 +3,9 @@ div.snippet-form {
 }
 
 div.snippet-form span[contenteditable=true] {
+  padding: 0 1px 0 1px;
   border-bottom:1px dashed darkgray;
+  background-color: rgba(255,255,255,0.2);
 }
 
 div.snippet-form span[contenteditable=true]:empty:not(:focus):before {content:attr(data-ph);}
