@@ -182,3 +182,22 @@
               :hidden true
               :exec (fn [key]
                       (insert-snippet (snippet-by-key key)))})
+
+(defn ->token [ed]
+  (editor/->token ed (editor/->cursor ed)))
+
+(defn ->clear-token [ed]
+  (let [token (->token ed)
+        line (:line (editor/->cursor ed))]
+    (editor/replace ed {:line line :ch (:start token)} {:line line :ch (:stop token)} "")))
+
+(defn snippet-by-token [ed]
+  (snippet-by-key (:string (->token ed))))
+
+(cmd/command {:command :snippet.by_token
+              :desc "Expand snippet by editor token"
+              :exec (fn []
+                      (when-let [ed (pool/last-active)]
+                        (let [item (snippet-by-token ed)]
+                          (->clear-token ed)
+                          (insert-snippet item))))})
