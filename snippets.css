@@ -1,5 +1,6 @@
 div.snippet-form {
   /*background-color: red;*/
+  display:inline-block;
 }
 
 div.snippet-form span[contenteditable=true] {

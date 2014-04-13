@@ -17,40 +17,43 @@ Currently reads any .edn file residing in `$lthome/snippets`
 There is no limits to how many files you can have. You can put all snippets in one file, or split them into several.
 
 
-###Snippet format
-__NOTE: Subject to change__
+###Snippet template files
+__NOTE: Will most likely change a bit in upcoming versions__
 
 
 ```clojure
-[
- {:name "Buster TestCase"
-  :key "buster_testcase"
-  :snippet
-"(function () {
-  buster.testCase(\"$1\", {
-    /* $1 */
-    $0
-  });
-}());"
-  }
- {:name "Buster Test"
-  :key "buster_test"
-  :snippet
-"\"$1\": function() {
-  $0
-},"
-  }
+{
+  :mode "editor.javascript"
+  :snippets [
+    {:name "Buster TestCase"
+    :key "tc"
+    :snippet-file "testcase.snip"}
 
- ]
+    {:name "Buster Assert Equals"
+    :key "ae"
+    :snippet "assert.equals($1, $2);$0"}]}
 ```
 
-Currently it is just a vector of maps with the following properties:
+####Data format description
+* mode - What kind of editor will you be using the shortcut in. Maps to tag used when defining keyboard shortcuts. __NOTE__ the absence of : in the mode name. Mode is introduced to reduce the chances of key conflicts
 * name - Descriptive name used in menus/tooltips etc
-* key  - Identifier for the snippet (currently if to snippet share the same key, the behavior if which is selected is not determenistic)
-* snippet - The actual snippet template.
-  * Use __$1__, __$2__ etc for defining tabstops for your template
-  * Repeated use of __$1__, __$2__ etc will mirror the values for the first instance
-  * __$0__ has a special meaning, and is not a tabstop, but rather where you wish to focus the cursor once the template variables have been completed
+* key  - Identifier for the snippet (currently if two snippets share the same key, the behavior of which is selected is not determenistic. Planning to introduce a selection dialog in these cases)
+* snippet - The actual snippet template. Mostly useful for one-liners
+* snippet-file - Filename of your snippet template.
+
+
+####Snippet format
+* Use __$1__, __$2__ etc for defining tabstops for your template
+* Repeated use of __$1__, __$2__ etc will mirror the values for the first instance
+* __$0__ has a special meaning, and is not a tabstop, but rather where you wish to focus the cursor once the template variables have been completed
+
+Linebreaks/indentations is currently important in your snippet templates for nice display in snippet completion mode.
+
+####Snippet navigation
+* Use tab to move between tabstops
+* When you tab out of last tabstop or you press enter, the snippet will be completed with whatever you may have filled in of template variables.
+* Esc will close snippet completion and restore editor to prior state
+
 
 
 ###View available shortcuts (and select if you wish)
@@ -64,14 +67,13 @@ Its really easy setting up shortcuts, just edit your user.keymap file.
                      "ctrl-t ctrl-t" [(:snippet.by_key "buster_test")]}
 ```
 
-
 ##Roadmap
+* Display select dialog when multiple matches for given (partial) key
 * Much more flexible grouping
 * Configurable locations for snippet files
-* Scoping using tags (:editor.javascript, :editor or other tags)
+* More flexible scoping with tags
 * pre/post code snippets ?
 * Variables with select values
-* Read snippet property from a separate file (easier formatting)
 
 
 ##Version
