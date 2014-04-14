@@ -2,5 +2,5 @@
  :version "0.0.1"
  :author "Magnus Rundberget"
  :source ""
- :desc "Snippets in textmate/yasnippets style for LightTable"
+ :desc "Snippets/templates in textmate/yasnippets style for Light Table"
  :behaviors "lt_snippets.behaviors"}
