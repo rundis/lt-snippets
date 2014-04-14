@@ -6,18 +6,39 @@ This plugin is loosely inspired by the template support in [TextMate](http://mac
 
 
 ##Installing
-The plugin can (soon!) be installed using the LightTable plugin manager (or clone this repo to your plugins folder, make sure you call the folder lt-snippets!).
+The plugin can be installed using the LightTable plugin manager (or clone this repo to your plugins folder, make sure you call the folder lt-snippets!).
 You probably will need to reload behaviors for the plugin to work.
 
 
+##Getting started
+* A few snippets for inspiration/trial: [Rundis Light Table Snippets](https://github.com/rundis/my-lt-snippets)
+
 ##Features
 
+###View available shortcuts (and select if you wish)
+You just open the command pane (ctrl-space) and select the __Snippets: Select snippet__ command. A list of defined snippets will be presented. Each item presented with name, key and keyboard shortcut (if defined, see below).
+
+###Creating shortcuts
+Its quite easy setting up shortcuts, just edit your user.keymap file.
+```clojure
+:editor.javascript { "ctrl-t ctrl-c" [(:snippet.by_key "tc")]
+                     "ctrl-a ctrl-e" [(:snippet.by_key "ae")]}
+```
+
+###Invoke snippet by expanding key
+Type the key in your editor and then select the command __Snippets: Expand by editor token__.
+
+
+###Key conflicts
+When more than one snippet matches a given key (for a given editor type), a select list will popup inline prompting you to select one of the alternatives.
+
+
 ###Snippet templates location
-Currently reads any .edn file residing in `$lthome/snippets`
+Currently reads any .edn file residing in `$lthome/snippets`. It will also walk any subdirectories.
 There is no limits to how many files you can have. You can put all snippets in one file, or split them into several.
 
 
-###Snippet template files
+###Snippet definition files
 __NOTE: Will most likely change a bit in upcoming versions__
 
 
@@ -35,14 +56,17 @@ __NOTE: Will most likely change a bit in upcoming versions__
 ```
 
 ####Data format description
-* mode - What kind of editor will you be using the shortcut in. Maps to tag used when defining keyboard shortcuts. __NOTE__ the absence of : in the mode name. Mode is introduced to reduce the chances of key conflicts
+* mode - What kind of editor will you be using the shortcut in. Maps to tag used when defining keyboard shortcuts. (__NOTE__ the absence of : in the mode name). Mode reduce the chances of key conflicts
 * name - Descriptive name used in menus/tooltips etc
 * key  - Identifier for the snippet (currently if two snippets share the same key, the behavior of which is selected is not determenistic. Planning to introduce a selection dialog in these cases)
 * snippet - The actual snippet template. Mostly useful for one-liners
 * snippet-file - Filename of your snippet template.
+  * If specified, overrides whatever specified in :snippet
+  * if file ```($path of edn file$/$snippet.file$)``` isn't found the snippet will just return the path.
+  * You should probably use this property for anything more than one-liners to keep the formatting sane
 
 
-####Snippet format
+###Snippet format
 * Use __$1__, __$2__ etc for defining tabstops for your template
 * Repeated use of __$1__, __$2__ etc will mirror the values for the first instance
 * __$0__ has a special meaning, and is not a tabstop, but rather where you wish to focus the cursor once the template variables have been completed
@@ -56,20 +80,10 @@ Linebreaks/indentations is currently important in your snippet templates for nic
 
 
 
-###View available shortcuts (and select if you wish)
-You just open the command pane (ctrl-space) and select the __Select snippet to invoke__ command. A list of defined snippets will be presented.
-
-
-###Creating shortcuts
-Its really easy setting up shortcuts, just edit your user.keymap file.
-```clojure
-:editor.javascript { "ctrl-t ctrl-c" [(:snippet.by_key "buster_testcase")]
-                     "ctrl-t ctrl-t" [(:snippet.by_key "buster_test")]}
-```
-
 ##Roadmap
-* Display select dialog when multiple matches for given (partial) key
-* Much more flexible grouping
+* Name placeholders(tabstops)
+* More keyboard friendly key conflict resolution
+* Feature to use common key prefix to allow easy setup of all snippet shortcuts ?
 * Configurable locations for snippet files
 * More flexible scoping with tags
 * pre/post code snippets ?
@@ -77,7 +91,7 @@ Its really easy setting up shortcuts, just edit your user.keymap file.
 
 
 ##Version
-No release as of yet
+0.0.1 Initial release with fairly usable features
 
 ##License
 GPLv3 license, same as [Light Table](https://github.com/LightTable/LightTable). See LICENSE.md for the full text.
