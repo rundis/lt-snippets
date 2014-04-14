@@ -1,15 +1,13 @@
 (ns lt.plugins.lt-snippets
   (:require [lt.object :as object]
-            [lt.objs.tabs :as tabs]
             [lt.objs.command :as cmd]
             [lt.objs.editor.pool :as pool]
             [lt.objs.editor :as editor]
-            [lt.plugins.auto-complete :as hinter]
             [lt.objs.sidebar.command :as scmd]
             [lt.objs.files :as files]
             [lt.util.dom :as dom]
-            [lt.objs.keyboard :as keyboard]
-            [clojure.string :as s])
+            [clojure.string :as s]
+            [lt.plugins.lt-snippets.snippets :as snippets])
   (:require-macros [lt.macros :refer [defui behavior]]))
 
 
@@ -18,13 +16,7 @@
                 :behaviors [::show-snippet-hints]
                 :name "lt-snippets")
 
-(def snippets (object/create ::lt-snippets))
-
-(defn get-tabstops[snippet]
-  (into #{} (filter #(not (= % "$0")) (re-seq #"\$\d+" snippet))))
-
-(defn tabstops? [snippet]
-  (empty? (get-tabstops snippet)))
+(def lt-snippets (object/create ::lt-snippets))
 
 (defn tabstop-to-input [tabstop]
   (str "<span contenteditable='true' data-ph='" (s/replace tabstop "$" "#") "' class='snipvar-" (s/replace tabstop "$" "") "'></span>"))
@@ -60,11 +52,14 @@
                       (object/raise this :clear)
                       (object/destroy! this)))
 
+(defn find-pos [ed from txt]
+  (->>
+   (range (:line from) (+ 1 (:line (editor/->cursor ed))))
+   (map #(hash-map :line % :text (.-text (editor/line-handle ed %))))
+   (filter #(.contains (:text %) txt))
+   (map #(dissoc (assoc % :ch (.indexOf (:text %) txt)) :text))
+   (first)))
 
-(defn find-line-containing [ed txt callback]
-  (.eachLine (.getDoc (editor/->cm-ed ed)) (fn [line-handle]
-                                             (when (.contains (.-text line-handle) txt)
-                                               (callback (.-line(.lineInfo (editor/->cm-ed ed) line-handle)))))))
 
 (defn map-replace [m text]
   (reduce
@@ -89,7 +84,9 @@
 (defn indent-and-move [ed from to focus]
   (editor/set-selection ed from to)
   (editor/indent-selection ed "smart")
-  (editor/move-cursor ed focus))
+  (editor/move-cursor ed focus)
+  (editor/indent-selection ed "smart")
+  (editor/focus ed))
 
 
 (defn complete-snippet [ed snippet]
@@ -97,12 +94,9 @@
     (editor/insert-at-cursor ed snippet)
     (if-not (.contains snippet "$0")
       (indent-and-move ed pos (editor/->cursor ed) (editor/->cursor ed))
-      (find-line-containing ed "$0" (fn [line-no]
-                                        (let [ch (.indexOf (editor/line ed line-no) "$0")]
-                                          (editor/replace ed {:line line-no :ch ch} {:line line-no :ch (+ 2 ch)} "")
-                                          (indent-and-move ed pos (editor/->cursor ed) {:line line-no :ch ch}))))
-      )
-    ))
+      (when-let [cursor (find-pos ed pos "$0")]
+        (editor/replace ed cursor (update-in cursor [:ch] + 2 ) "")
+        (indent-and-move ed pos (editor/->cursor ed) cursor)))))
 
 (defn complete-snippet-form [this ed form]
   (let [snip (form-to-snippet form (-> @this :item :snippet))]
@@ -116,7 +110,7 @@
     (let [ed (pool/last-active)
           pos (editor/->cursor ed)
           snippet (:snippet item)]
-      (if (tabstops? snippet)
+      (if (snippets/tabstops? snippet)
         (complete-snippet ed snippet)
         (object/create ::inline-form {:ed ed :item item :pos pos})))))
 
@@ -135,7 +129,7 @@
                           (let [content (snippet-form this info)
                                 line (-> info :pos :line)
                                 snippet (-> info :item :snippet)]
-                            (dom/html content (snippet-to-form snippet (get-tabstops snippet)))
+                            (dom/html content (snippet-to-form snippet (snippets/get-tabstops snippet)))
                             (dom/on content "keyup" (fn [ev]
                                                       (set-mirrored-values content (.-target ev))))
 
@@ -166,65 +160,6 @@
 
 
 
-
-(def snippet-dir (files/lt-user-dir "snippets"))
-
-
-(defn load-snippets [path snipgroup]
-  {:mode (:mode snipgroup)
-   :snippets (map (fn [item]
-                    (if-let [file (:snippet-file item)]
-                      (assoc item :snippet (files/bomless-read (files/join path file)))
-                      item))
-                  (:snippets snipgroup))})
-
-(defn load-snippet-definition [path]
-  (->
-   (files/bomless-read path)
-   (cljs.reader/read-string)
-   ((partial load-snippets (files/parent path)))))
-
-
-(defn load-snippet-definitions []
-  (->
-   (files/filter-walk (fn [path] (= (files/ext path) "edn")) snippet-dir)
-   ((partial map load-snippet-definition))))
-
-
-(defn degroup-snippets [snippets]
-  (mapcat identity (map (fn [snip] (:snippets snip)) snippets)))
-
-(defn snippet-by-key [key snippets]
-  (some #(when (= key (:key %)) %)
-        (degroup-snippets snippets)))
-
-
-(defn snippet-by
-  ([key snippets]
-   (snippet-by-key key snippets))
-  ([key modes snippets]
-   (snippet-by-key key (filter #(contains? modes (keyword (:mode %))) snippets))))
-
-
-(defn get-snippet-shortcuts []
-  (mapcat identity (map (fn [keygroup]
-                         (map (fn [km]
-                                (hash-map :tag (first keygroup)
-                                          :shortcut (first km)
-                                          :key (last (first (first (rest km))))))
-                              (filter #(.contains (str %) ":snippet.by_key") (first (rest keygroup)))))
-                       (seq @keyboard/keys))))
-
-
-(defn get-snippets []
-  (let [snippets (degroup-snippets (load-snippet-definitions))
-        shortcuts (get-snippet-shortcuts)]
-    (map (fn [snip]
-           (assoc snip :shortcut (when-let [sc (some #(if (= (:key snip) (:key %)) %)  shortcuts)] (:shortcut sc))))
-         snippets)))
-
-
-
 ;; **************** SELECTING SNIPPETS ******************
 (behavior ::set-selected
           :triggers #{:select}
@@ -237,7 +172,7 @@
 
 
 (def add-selector
-  (selector {:items get-snippets
+  (selector {:items snippets/all-keymapped
              :key :key
              :transform #(str "<p>" (:name %4) "</p>"
                               "<p class='binding'>"
@@ -256,11 +191,8 @@
               :desc "Snippets: Invoke snippet by its key (and editor tag)"
               :hidden true
               :exec (fn [key]
-                      (let [ed (pool/last-active)
-                            snippets (load-snippet-definitions)]
-                        (if ed
-                          (insert-snippet (snippet-by key (:tags @ed) snippets))
-                          (insert-snippet (snippet-by key snippets)))))})
+                      (when-let [ed (pool/last-active)]
+                        (maybe-select-snippet ed (snippets/by key (:tags @ed) (snippets/all)))))})
 
 (defn ->token [ed]
   (editor/->token ed (editor/->cursor ed)))
@@ -271,12 +203,63 @@
     (editor/replace ed {:line line :ch (:start token)} {:line line :ch (:stop token)} "")))
 
 (defn snippet-by-token [ed]
-  (snippet-by (:string (->token ed)) (:tags @ed) (load-snippet-definitions)))
+  (snippets/by (:string (->token ed)) (:tags @ed) (snippets/all)))
 
 (cmd/command {:command :snippet.by_token
               :desc "Expand snippet by editor token"
               :exec (fn []
                       (when-let [ed (pool/last-active)]
-                        (when-let [item (snippet-by-token ed)]
+                        (when-let [items (snippet-by-token ed)]
                           (clear-token ed)
-                          (insert-snippet item))))})
+                          (maybe-select-snippet ed items))))})
+
+
+
+(defn maybe-select-snippet [ed items]
+  (if (= 1 (count items))
+    (insert-snippet (first items))
+    (object/create ::inline-select-form {:ed ed :pos (editor/->cursor ed) :items items})))
+
+(defui snippet-select-item [idx item]
+  [:option {:value idx :data-snippet (:snippet item) :selected (= idx 0)} (:name item)])
+
+(defui snippet-select-form [this items]
+  [:div.snippet-select-form
+   [:select {:size (count items)}
+    (map-indexed snippet-select-item items)]])
+
+(object/object* ::inline-select-form
+                :triggers #{:click :clear!}
+                :tags #{:inline :inline.snippet.select.form}
+                :init (fn [this info]
+                        (when-let [ed (editor/->cm-ed (:ed info))]
+                          (let [content (snippet-select-form this (:items info))
+                                line (-> info :pos :line)
+                                remove-form (fn [this]
+                                         (.clear (:mark @this))
+                                         (object/raise this :clear)
+                                         (object/destroy! this))]
+                            (object/merge! this (assoc info
+                                                  :mark (editor/bookmark ed
+                                                                         {:line line :ch (-> info :pos :ch)}
+                                                                         {:widget content
+                                                                          :insertLeft false})))
+                            (dom/on content "keydown" (fn [ev]
+                                                        (let [kc (.-keyCode ev)
+                                                              el (.-target ev)]
+                                                          (cond
+                                                           (= 13 kc) (do
+                                                                       (dom/stop-propagation ev)
+                                                                       (dom/prevent ev)
+                                                                       (let [snippet (dom/attr (dom/$ "option:checked" el) "data-snippet")]
+                                                                         (remove-form this)
+                                                                         (insert-snippet {:snippet snippet})))
+                                                           (= 27 kc) (do
+                                                                       (dom/stop-propagation ev)
+                                                                       (dom/prevent ev)
+                                                                       (remove-form this)
+                                                                       (editor/focus ed))))))
+
+                            (dom/val (dom/$ :option content) 0)
+                            (dom/focus (dom/$ :select content))
+                            content))))

@@ -4,9 +4,9 @@ div.snippet-form {
 }
 
 div.snippet-form span[contenteditable=true] {
-  padding: 0 1px 0 1px;
+  padding: 3px 2px 1px 2px;
   border-bottom:1px dashed darkgray;
-  background-color: rgba(255,255,255,0.2);
+  background-color: var(pane-bg);
 }
 
 div.snippet-form span[contenteditable=true]:empty:not(:focus):before {content:attr(data-ph);}
@@ -19,3 +19,28 @@ div.snippet-form input {
   margin: 2;
   /*background: transparent;*/
 }
+
+
+div.snippet-select-form {
+  display: inline-block;
+  background: none;
+  padding:0;
+  margin: 0;
+
+}
+
+
+div.snippet-select-form select {
+  -webkit-appearance:none;
+  vertical-align: top;
+  /*margin-top: -10px;*/
+  font-size: inherit;
+  font-family: inherit;
+  color: inherit;
+  background: var(pane-bg);
+  border: 1px solid var(pane-bg);
+}
+
+
+
+
