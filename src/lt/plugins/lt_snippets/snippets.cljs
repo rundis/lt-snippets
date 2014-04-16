@@ -73,8 +73,30 @@
          snippets)))
 
 
+(defn comp-tabstop [a b]
+   (cond
+    (and (:placeholder a) (not (:placeholder b))) true
+    (and (:placeholder b) (not (:placeholder a))) false
+    :else false))
+
 (defn get-tabstops[snippet]
-  (into #{} (filter #(not (= % "$0")) (re-seq #"\$\d+" snippet))))
+  (->>
+   (re-seq #"\$\{\d+\:\w+\}|\$\d+" snippet)
+   (filter #(not (= % "$0")))
+   (map #(hash-map :num (re-find #"\d+" %)
+                   :placeholder (when-let [ph (re-find #"\$\{\d+\:(\w+)\}" %)] (last ph))
+                   :text %))
+   (group-by :num)
+   (map (fn [ts]
+        (map-indexed (fn [idx tsi]
+                       (if (> idx 0)
+                         (assoc tsi :mirrored true)
+                         tsi))
+                     (sort (comp comp-tabstop) (last ts)))))
+   (mapcat identity)))
+
 
 (defn tabstops? [snippet]
   (empty? (get-tabstops snippet)))
+
+

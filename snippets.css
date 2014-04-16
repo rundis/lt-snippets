@@ -1,5 +1,4 @@
 div.snippet-form {
-  /*background-color: red;*/
   display:inline-block;
 }
 
@@ -10,6 +9,8 @@ div.snippet-form span[contenteditable=true] {
 }
 
 div.snippet-form span[contenteditable=true]:empty:not(:focus):before {content:attr(data-ph);}
+
+div.snippet-form ::selection {background: var(placeholder-fg); color: var(highlight-fg);}
 
 div.snippet-form input {
   font-size: inherit;

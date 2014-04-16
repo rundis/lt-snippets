@@ -11,11 +11,17 @@
 
 
 (defn tabstop-to-input [tabstop]
-  (str "<span contenteditable='true' data-ph='"
-       (s/replace tabstop "$" "#") "' class='snipvar-" (s/replace tabstop "$" "") "'></span>"))
+  (str "<span contenteditable='true'"
+       " data-ph='" (if (:placeholder tabstop) (:placeholder tabstop) (str "#" (:num tabstop))) "'"
+       " data-ts='" (:text tabstop) "'"
+       " class='snipvar-" (:num tabstop) "'>"
+       (when-let [v (:placeholder tabstop)] v)
+       "</span>"))
 
 (defn tabstop-to-mirror [tabstop]
-  (str "<span class='snipvar-" (s/replace tabstop "$" "") "'" "></span>"))
+  (str "<span class='snipvar-" (:num tabstop) "'"
+       " data-ts='" (:text tabstop) "'"
+       "></span>"))
 
 
 (defn snippet-to-form [snippet tabstops]
@@ -25,9 +31,9 @@
      (empty? tabstops) snippet
      :else (let [tabstop (first tabstops)]
              (recur
-              (s/replace
-               (s/replace-first snippet tabstop (tabstop-to-input tabstop))
-               tabstop (tabstop-to-mirror tabstop))
+              (if (:mirrored tabstop)
+                (s/replace snippet (:text tabstop) (tabstop-to-mirror tabstop))
+                (s/replace-first snippet (:text tabstop) (tabstop-to-input tabstop)))
               (rest tabstops))))))
 
 
@@ -47,7 +53,7 @@
 (defn form-to-snippet [form snippet]
   (when-let [inputs (dom/$$ :span form)]
     (map-replace
-     (into {} (map #(hash-map (s/replace (.-className %) #"snipvar-" "$") (dom/html %)) inputs))
+     (into {} (map #(hash-map (dom/attr % "data-ts") (dom/html %)) inputs))
      snippet)))
 
 
@@ -89,6 +95,17 @@
                                 snippet (-> info :item :snippet)
                                 callback (:callback info)]
                             (dom/html content (snippet-to-form snippet (snippets/get-tabstops snippet)))
+
+
+                            (doseq [el (dom/$$ "span[contenteditable=true]" content)]
+                              (set-mirrored-values content el)
+                              (dom/on el "focus" (fn [ev]
+                                                   (let [sel (.getSelection js/window)
+                                                         r (.createRange js/document)]
+                                                     (.selectNodeContents r el)
+                                                     (.removeAllRanges sel)
+                                                     (.addRange sel r)))))
+
                             (dom/on content "keyup" (fn [ev]
                                                       (set-mirrored-values content (.-target ev))))
 
@@ -115,6 +132,7 @@
                                                                          {:widget content
                                                                           :insertLeft true})))
                             (dom/focus (dom/$ :span content))
+
                             content))))
 
 (defn make [info]
