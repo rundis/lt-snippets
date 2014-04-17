@@ -100,3 +100,5 @@
   (empty? (get-tabstops snippet)))
 
 
+(defn tokenize [snippet]
+  (filter (complement s/blank?) (js->clj (.split snippet #"(\$\{\d+\:\w+\}|\$\d+)"))))

@@ -20,21 +20,22 @@
 
 (defn tabstop-to-mirror [tabstop]
   (str "<span class='snipvar-" (:num tabstop) "'"
-       " data-ts='" (:text tabstop) "'"
-       "></span>"))
+       " data-ts='" (:text tabstop) "'" "></span>"))
 
+
+(defn replace-tabstops [snippet]
+  (loop [tokens (vec (snippets/tokenize snippet))
+         tabstops (snippets/get-tabstops snippet)]
+    (cond
+     (empty? tabstops) tokens
+     :else (let [tabstop (first tabstops)
+                 idx (.indexOf (clj->js tokens) (:text tabstop))]
+             (recur
+              (assoc tokens idx (if (:mirrored tabstop) (tabstop-to-mirror tabstop) (tabstop-to-input tabstop)))
+              (rest tabstops))))))
 
 (defn snippet-to-form [snippet tabstops]
-  (loop [snippet (s/replace snippet "$0" "")
-         tabstops tabstops]
-    (cond
-     (empty? tabstops) snippet
-     :else (let [tabstop (first tabstops)]
-             (recur
-              (if (:mirrored tabstop)
-                (s/replace snippet (:text tabstop) (tabstop-to-mirror tabstop))
-                (s/replace-first snippet (:text tabstop) (tabstop-to-input tabstop)))
-              (rest tabstops))))))
+  (s/join (replace-tabstops snippet)))
 
 
 (defn map-replace [m text]
@@ -46,9 +47,8 @@
 (defn set-mirrored-values [form el]
   (let [c (.-className el)
         v (dom/html el)]
-    (doseq [mirr (rest (dom/$$ (str "span." c)  form))]
+    (doseq [mirr (dom/$$ (str "." c ":not([contenteditable=true])")  form)]
       (dom/html mirr v))))
-
 
 (defn form-to-snippet [form snippet]
   (when-let [inputs (dom/$$ :span form)]
@@ -77,6 +77,12 @@
    (.-className el)
    (.-className (last (dom/$$ "span[contenteditable=true]" form)))))
 
+(defn first-tabstop? [form el]
+  (=
+   (.-className el)
+   (.-className (last (dom/$$ "span[contenteditable=true]" form)))))
+
+
 
 (defn complete-snippet-form [this ed form callback]
   (let [snip (form-to-snippet form (-> @this :item :snippet))]
@@ -94,8 +100,8 @@
                                 line (-> info :pos :line)
                                 snippet (-> info :item :snippet)
                                 callback (:callback info)]
-                            (dom/html content (snippet-to-form snippet (snippets/get-tabstops snippet)))
 
+                            (dom/html content (snippet-to-form snippet (snippets/get-tabstops snippet)))
 
                             (doseq [el (dom/$$ "span[contenteditable=true]" content)]
                               (set-mirrored-values content el)
@@ -131,9 +137,12 @@
                                                                          {:line line :ch (-> info :pos :ch)}
                                                                          {:widget content
                                                                           :insertLeft true})))
-                            (dom/focus (dom/$ :span content))
+                            (dom/focus (dom/$ "span[contenteditable=true]" content))
 
                             content))))
 
 (defn make [info]
   (object/create ::inline-form info))
+
+
+
