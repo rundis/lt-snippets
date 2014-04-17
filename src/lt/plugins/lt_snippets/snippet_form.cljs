@@ -84,11 +84,11 @@
 
 
 
-(defn complete-snippet-form [this ed form callback]
+(defn complete-snippet-form [this ed form cb-obj]
   (let [snip (form-to-snippet form (-> @this :item :snippet))]
     (object/raise this :remove.snippet.form)
     (editor/focus ed)
-    (callback ed snip)))
+    (object/raise cb-obj :snippet.complete ed snip)))
 
 
 (object/object* ::inline-form
@@ -99,7 +99,7 @@
                           (let [content (form this info)
                                 line (-> info :pos :line)
                                 snippet (-> info :item :snippet)
-                                callback (:callback info)]
+                                cb-obj (:cb-obj info)]
 
                             (dom/html content (snippet-to-form snippet (snippets/get-tabstops snippet)))
 
@@ -122,12 +122,12 @@
                                                          (= 13 kc) (do
                                                                      (dom/stop-propagation ev)
                                                                      (dom/prevent ev)
-                                                                     (complete-snippet-form this ed content callback))
+                                                                     (complete-snippet-form this ed content cb-obj))
 
                                                          (= 9 kc)  (when (last-tabstop? content el)
                                                                      (dom/stop-propagation ev)
                                                                      (dom/prevent ev)
-                                                                     (complete-snippet-form this ed content callback))
+                                                                     (complete-snippet-form this ed content cb-obj))
                                                          (= 27 kc) (do
                                                                      (object/raise this :remove.snippet.form)
                                                                      (editor/focus ed))))))

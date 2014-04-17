@@ -15,7 +15,6 @@
 
 (object/object* ::lt-snippets
                 :tags [:lt-snippets]
-                :behaviors [::show-snippet-hints]
                 :name "lt-snippets")
 
 (def lt-snippets (object/create ::lt-snippets))
@@ -27,35 +26,6 @@
    (filter #(.contains (:text %) txt))
    (map #(dissoc (assoc % :ch (.indexOf (:text %) txt)) :text))
    (first)))
-
-
-(defn indent-and-move [ed from to focus]
-  (editor/set-selection ed from to)
-  (editor/indent-selection ed "smart")
-  (editor/move-cursor ed focus)
-  (editor/indent-selection ed "smart")
-  (editor/focus ed))
-
-
-(defn complete-snippet [ed snippet]
-  (let [pos (editor/->cursor ed)]
-    (editor/insert-at-cursor ed snippet)
-    (if-not (.contains snippet "$0")
-      (indent-and-move ed pos (editor/->cursor ed) (editor/->cursor ed))
-      (when-let [cursor (find-pos ed pos "$0")]
-        (editor/replace ed cursor (update-in cursor [:ch] + 2 ) "")
-        (indent-and-move ed pos (editor/->cursor ed) cursor)))))
-
-
-(defn insert-snippet [item]
-  (when item
-    (let [ed (pool/last-active)
-          pos (editor/->cursor ed)
-          snippet (:snippet item)]
-      (if (snippets/tabstops? snippet)
-        (complete-snippet ed snippet)
-        (snippet-form/make {:callback complete-snippet :ed ed :item item :pos pos})))))
-
 
 (defn ->token [ed]
   (editor/->token ed (editor/->cursor ed)))
@@ -69,14 +39,57 @@
   (snippets/by (:string (->token ed)) (:tags @ed) (snippets/all)))
 
 
+(behavior ::indent-snippet
+          :desc "Indent inserted snippet (and move cursor accordingly)"
+          :triggers #{:snippet.indent}
+          :reaction (fn [this info]
+                      (editor/set-selection (:ed info) (:from info) (:to info))
+                      (editor/indent-selection (:ed info) "smart")
+                      (editor/move-cursor (:ed info) (:focuspos info))
+                      (editor/indent-selection (:ed info) "smart")
+                      (editor/focus (:ed info))))
 
-(defn maybe-select-snippet [ed items]
-  (when (seq items)
-    (if (= 1 (count items))
-      (insert-snippet (first items))
-      (select-form/make {:callback insert-snippet :ed ed :pos (editor/->cursor ed) :items items}))))
+
+(behavior ::complete-snippet
+          :desc "Insert a completed snippet into the given editor"
+          :triggers #{:snippet.complete}
+          :reaction (fn [this ed snippet]
+                      (let [pos (editor/->cursor ed)
+                            info {:ed ed :from pos}
+                            cur (fn [e] (editor/->cursor e))]
+                        (editor/insert-at-cursor ed snippet)
+                        (if-not (.contains snippet "$0")
+                          (object/raise this :snippet.indent (assoc info :to (cur ed) :focuspos (cur ed)))
+                          (when-let [cursor (find-pos ed pos "$0")]
+                            (editor/replace ed cursor (update-in cursor [:ch] + 2 ) "")
+                            (object/raise this :snippet.indent (assoc info :to (cur ed) :focuspos cursor)))))))
 
 
+(behavior ::initiate-snippet
+          :desc "Display snippet form if snippet template contains tabstops, otherwise insert directly"
+          :triggers #{:snippet.initiate}
+          :reaction (fn [this ed item]
+                      (let [pos (editor/->cursor ed)
+                            snippet (:snippet item)]
+                        (if (snippets/tabstops? snippet)
+                          (object/raise this :snippet.complete ed snippet)
+                          (snippet-form/make {:cb-obj this
+                                              :ed ed
+                                              :item item
+                                              :pos pos})))))
+
+
+(behavior ::maybe-select-snippet
+          :desc "Prompt for snippet selection if multiple given, otherwise initiate snippet"
+          :triggers #{:snippet.select.maybe}
+          :reaction (fn [this ed items]
+                      (when (seq items)
+                        (if (= 1 (count items))
+                          (object/raise this :snippet.initiate ed (first items))
+                          (select-form/make {:cb-obj this
+                                             :ed ed
+                                             :pos (editor/->cursor ed)
+                                             :items items})))))
 
 (behavior ::set-selected
           :triggers #{:select}
@@ -100,7 +113,7 @@
               :desc "Snippets: Select snippet"
               :options add-selector
               :exec (fn [item]
-                      (insert-snippet item))})
+                      (object/raise lt-snippets :snippet.initiate (pool/last-active) item))})
 
 (cmd/command {:command :snippet.by_token
               :desc "Snippets: Expand by editor token"
@@ -108,7 +121,7 @@
                       (when-let [ed (pool/last-active)]
                         (when-let [items (seq (snippet-by-token ed))]
                           (clear-token ed)
-                          (maybe-select-snippet ed items))))})
+                          (object/raise lt-snippets :snippet.select.maybe ed items))))})
 
 
 (cmd/command {:command :snippet.by_key
@@ -116,5 +129,6 @@
               :hidden true
               :exec (fn [key]
                       (when-let [ed (pool/last-active)]
-                        (maybe-select-snippet ed (snippets/by key (:tags @ed) (snippets/all)))))})
+                        (object/raise lt-snippets :snippet.select.maybe ed (snippets/by key (:tags @ed) (snippets/all)))))})
+
 

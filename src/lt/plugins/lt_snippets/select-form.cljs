@@ -24,7 +24,7 @@
                         (when-let [ed (editor/->cm-ed (:ed info))]
                           (let [content (snippet-select-form this (:items info))
                                 line (-> info :pos :line)
-                                callback (:callback info)
+                                cb-obj (:cb-obj info)
                                 remove-form (fn [this]
                                          (.clear (:mark @this))
                                          (object/raise this :clear)
@@ -43,7 +43,7 @@
                                                                        (dom/prevent ev)
                                                                        (let [snippet (dom/attr (dom/$ "option:checked" el) "data-snippet")]
                                                                          (remove-form this)
-                                                                         (callback {:snippet snippet})))
+                                                                         (object/raise cb-obj :snippet.initiate ed {:snippet snippet})))
                                                            (= 27 kc) (do
                                                                        (dom/stop-propagation ev)
                                                                        (dom/prevent ev)
