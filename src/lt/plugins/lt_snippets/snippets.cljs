@@ -9,6 +9,13 @@
 
 (def snippet-dir (files/lt-user-dir "snippets"))
 
+(defn get-snippet-dir []
+  (let [default (files/lt-user-dir "settings/snippets")]
+    (if (files/exists? default)
+      default
+      (files/lt-user-dir "snippets"))))
+
+
 
 (defn load-if-exists [path file]
   (let [fullpath (files/join path file)]
@@ -52,7 +59,7 @@
 
 (defn load-all []
   (->>
-   (files/filter-walk (fn [path] (= (files/ext path) "edn")) snippet-dir)
+   (files/filter-walk (fn [path] (= (files/ext path) "edn")) (get-snippet-dir))
    (map load-one)))
 
 (println (all))

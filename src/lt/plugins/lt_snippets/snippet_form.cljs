@@ -79,7 +79,7 @@
           :desc "Behavior to remove inline snippet form (default on enter and esc or last/no inputs)"
           :triggers #{:remove.snippet.form}
           :reaction (fn [this]
-                      (.clear (:mark @this))
+                      (.clear (:snipmark @this))
                       (object/raise this :clear)
                       (object/destroy! this)))
 
@@ -144,7 +144,7 @@
                                                                      (editor/focus ed))))))
 
                             (object/merge! this (assoc info
-                                                  :mark (editor/bookmark ed
+                                                  :snipmark (editor/bookmark ed
                                                                          {:line line :ch (-> info :pos :ch)}
                                                                          {:widget content
                                                                           :insertLeft true})))
