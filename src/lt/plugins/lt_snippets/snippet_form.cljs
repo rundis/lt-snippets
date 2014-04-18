@@ -34,9 +34,17 @@
               (assoc tokens idx (if (:mirrored tabstop) (tabstop-to-mirror tabstop) (tabstop-to-input tabstop)))
               (rest tabstops))))))
 
+(defn escapeSnippet [snippet]
+  (let [pre (.createElement js/document "pre")
+        tn (.createTextNode js/document snippet)]
+    (.appendChild pre tn)
+    (.-innerHTML pre)))
+
+
 (defn snippet-to-form [snippet]
   (->>
    (s/replace snippet "$0" "")
+   (escapeSnippet)
    (replace-tabstops)
    (s/join)))
 
