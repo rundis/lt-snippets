@@ -2,6 +2,7 @@
   (:require [lt.object :as object]
             [lt.objs.files :as files]
             [lt.objs.keyboard :as keyboard]
+            [lt.objs.console :as console]
             [clojure.string :as s])
   (:require-macros [lt.macros :refer [defui behavior]]))
 
@@ -15,30 +16,49 @@
       fullpath
       (files/bomless-read fullpath))))
 
+
+(defn resolve-modes [a b]
+  {:+ (->>
+       (clojure.set/union (:+ a) (:+ b))
+       (remove (or (:- b) #{}))
+       (into #{}))
+   :- (->>
+       (clojure.set/union (:- a) (:- b))
+       (remove (or (:+ b) #{}))
+       (into #{}))})
+
+
 (defn load-files [path snipgroup]
-  {:mode (:mode snipgroup)
-   :snippets (map (fn [item]
-                    (if-let [file (:snippet-file item)]
-                      (assoc item :snippet (load-if-exists path file))
-                      item))
-                  (:snippets snipgroup))})
+  (let [gm (:modes snipgroup)]
+    {:modes gm
+     :snippets (->>
+                (map (fn [item]
+                      (if-let [file (:snippet-file item)]
+                        (assoc item :snippet (load-if-exists (files/parent path) file))
+                        item))
+                    (:snippets snipgroup))
+                (map (fn [item]
+                       (if-let [sm (:modes item)]
+                          (assoc item :modes (resolve-modes gm (:modes item)))
+                          (assoc item :modes gm))))
+                )}))
 
 (defn load-one [path]
-  (->
+  (->>
    (files/bomless-read path)
    (cljs.reader/read-string)
-   ((partial load-files (files/parent path)))))
+   (load-files path)))
 
 
 (defn load-all []
-  (->
+  (->>
    (files/filter-walk (fn [path] (= (files/ext path) "edn")) snippet-dir)
-   ((partial map load-one))))
+   (map load-one)))
 
+(println (all))
 
 (defn all []
   (load-all))
-
 
 (defn degroup [snippets]
   (mapcat identity (map (fn [snip] (:snippets snip)) snippets)))
@@ -46,13 +66,18 @@
 (defn by-key [key snippets]
   (filter #(= key (:key %)) (degroup snippets)))
 
+(defn satisfies-modes? [modes item]
+  (if (and (clojure.set/intersection modes (-> item :modes :+))
+           (empty? (clojure.set/intersection modes (-> item :modes :-))))
+           true
+           false
+           ))
 
 (defn by
   ([key snippets]
    (by-key key snippets))
   ([key modes snippets]
-   (by-key key (filter #(contains? modes (keyword (:mode %))) snippets))))
-
+   (filter (partial satisfies-modes? modes) (by-key key snippets))))
 
 
 (defn get-shortcuts []

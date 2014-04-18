@@ -34,8 +34,11 @@
               (assoc tokens idx (if (:mirrored tabstop) (tabstop-to-mirror tabstop) (tabstop-to-input tabstop)))
               (rest tabstops))))))
 
-(defn snippet-to-form [snippet tabstops]
-  (s/join (replace-tabstops snippet)))
+(defn snippet-to-form [snippet]
+  (->>
+   (s/replace snippet "$0" "")
+   (replace-tabstops)
+   (s/join)))
 
 
 (defn map-replace [m text]
@@ -101,7 +104,7 @@
                                 snippet (-> info :item :snippet)
                                 cb-obj (:cb-obj info)]
 
-                            (dom/html content (snippet-to-form snippet (snippets/get-tabstops snippet)))
+                            (dom/html content (snippet-to-form snippet))
 
                             (doseq [el (dom/$$ "span[contenteditable=true]" content)]
                               (set-mirrored-values content el)
