@@ -62,7 +62,7 @@
    (files/filter-walk (fn [path] (= (files/ext path) "edn")) (get-snippet-dir))
    (map load-one)))
 
-(println (all))
+
 
 (defn all []
   (load-all))
