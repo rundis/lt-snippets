@@ -13,11 +13,6 @@
   (:require-macros [lt.macros :refer [defui behavior]]))
 
 
-(object/object* ::lt-snippets
-                :tags [:lt-snippets]
-                :name "lt-snippets")
-
-(def lt-snippets (object/create ::lt-snippets))
 
 (defn find-pos [ed from txt]
   (->>
@@ -90,6 +85,14 @@
                                              :ed ed
                                              :pos (editor/->cursor ed)
                                              :items items})))))
+
+
+(object/object* ::lt-snippets
+                :tags [:lt-snippets]
+                :name "lt-snippets")
+
+(def lt-snippets (object/create ::lt-snippets))
+
 
 (behavior ::set-selected
           :triggers #{:select}

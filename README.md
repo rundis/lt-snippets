@@ -123,6 +123,7 @@ When prompted to complete a snippet the placeholder value will be highlighted (i
 
 
 ##Version
+* 0.0.3 Fix for behaviors not loading
 * 0.0.2 Support placeholders, escape html, prefer $lthome/settings/snippets to $lthome/snippets and a few other minor fixes. Some breaking changes. Pls see [Release notes](https://github.com/rundis/lt-snippets/releases/tag/0.0.2)
 * 0.0.1 Initial release with fairly usable features
 
