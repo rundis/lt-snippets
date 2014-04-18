@@ -11,7 +11,9 @@ You probably will need to reload behaviors for the plugin to work.
 
 
 ##Getting started
-* A few snippets for inspiration/trial: [Rundis Light Table Snippets](https://github.com/rundis/my-lt-snippets)
+* A few snippets for inspiration/trial: [My LightTable Settings](https://github.com/rundis/LightTable-settings). My settings/snippets directory uses submodules to pull in a couple of snippet collections
+    * [lt-buster-snippets](https://github.com/rundis/lt-buster-snippets) - Snippets for buster tests handy when using the [InstaBuster](https://github.com/busterjs/lt-instabuster) plugin
+    * [lt-plugin-snippets](https://github.com/rundis/lt-plugin-snippets) - Handy snippets when doing Light Table plugin development
 
 ##Features
 
@@ -34,7 +36,7 @@ When more than one snippet matches a given key (for a given editor type), a sele
 
 
 ###Snippet templates location
-Currently reads any .edn file residing in `$lthome/snippets`. It will also walk any subdirectories.
+Currently reads any .edn file residing in `$lthome/settings/snippets`. It will also walk any subdirectories.
 There is no limits to how many files you can have. You can put all snippets in one file, or split them into several.
 
 
@@ -44,11 +46,12 @@ __NOTE: Will most likely change a bit in upcoming versions__
 
 ```clojure
 {
-  :mode "editor.javascript"
+  :modes {:+ #{:editor.javascript}}
   :snippets [
     {:name "Buster TestCase"
     :key "tc"
-    :snippet-file "testcase.snip"}
+    :snippet-file "testcase.snip"
+    :modes {:+ #{:editor.typescript}} ; optional (probably rarely used)
 
     {:name "Buster Assert Equals"
     :key "ae"
@@ -56,22 +59,53 @@ __NOTE: Will most likely change a bit in upcoming versions__
 ```
 
 ####Data format description
-* mode - What kind of editor will you be using the shortcut in. Maps to tag used when defining keyboard shortcuts. (__NOTE__ the absence of : in the mode name). Mode reduce the chances of key conflicts
+* modes - What kind of editor will you be using the snippet in. Can be specified at snippet level as well (see below for detailed description)
 * name - Descriptive name used in menus/tooltips etc
-* key  - Identifier for the snippet (currently if two snippets share the same key, the behavior of which is selected is not determenistic. Planning to introduce a selection dialog in these cases)
+* key  - Identifier for the snippet. If more than one snippet matches you will be prompted to select one from a list of matching snippets
 * snippet - The actual snippet template. Mostly useful for one-liners
 * snippet-file - Filename of your snippet template.
   * If specified, overrides whatever specified in :snippet
   * if file ```($path of edn file$/$snippet.file$)``` isn't found the snippet will just return the path.
   * You should probably use this property for anything more than one-liners to keep the formatting sane
 
+####More on snippet modes
+Snippet modes uses a syntax similar to Light Table behaviors. The modes specified will be matched against the defined tags for the editor in which you are about to expand a snippet.
+
+```clojure
+{ :modes {:+ #{:editor.foo} :- #{:editor.bar}} }
+;; Means the snippet will resolve if:
+;; * the editor has a tag :editor.foo
+;; * but not if the editor also has a tag :editor.bar
+```
+
+Modes can be specified at "group" level, meaning the __:modes__ property in the top level map of your snippet definition file. This will the apply to all snippets in the definition file, unless you specify __:modes__ at the snippet level.
+
+
+```clojure
+{:+ #{:editor.foo :editor.bar}
+ :- #{:editor.transient :editor.plugin }} ;; modes at "group" level
+
+{:+ #{:editor.baz :editor.transient}
+ :- #{:editor.foo :editor.foobar}} ;; modes at "snippet" level
+
+;; will resolve to the following modes for the snippet:
+{:+ #{:editor.bar :editor.baz :editor.transient}
+ :- #{:editor.plugin :editor.foo : editor.foobar}}
+```
 
 ###Snippet format
 * Use __$1__, __$2__ etc for defining tabstops for your template
 * Repeated use of __$1__, __$2__ etc will mirror the values for the first instance
 * __$0__ has a special meaning, and is not a tabstop, but rather where you wish to focus the cursor once the template variables have been completed
 
-Linebreaks/indentations is currently important in your snippet templates for nice display in snippet completion mode.
+Linebreaks/indentations is currently important in your snippet templates for nice display in snippet completion mode. Another reason to have templates beyond one liners in a separate file.
+
+####Placeholders
+You can have placeholder values for your tabstops. The syntax is ```${1:placeholder}```
+When prompted to complete a snippet the placeholder value will be highlighted (if you wish to keep it just tab to next tabstop).
+* A tabstop with a placeholder value takes precedence over a tabstop with the same number as one without, resulting in the latter becoming a mirrored value.
+* If two tabstops with the same tabstop number has placeholders, the first becomes a tabstop, the other becomes a mirror
+
 
 ####Snippet navigation
 * Use tab to move between tabstops
@@ -81,17 +115,16 @@ Linebreaks/indentations is currently important in your snippet templates for nic
 
 
 ##Roadmap
-* Name placeholders(tabstops)
 * More keyboard friendly key conflict resolution
 * Feature to use common key prefix to allow easy setup of all snippet shortcuts ?
 * Configurable locations for snippet files
-* More flexible scoping with tags
 * pre/post code snippets ?
 * Variables with select values
 
 
 ##Version
-0.0.1 Initial release with fairly usable features
+* 0.0.2 Support placeholders, escape html, prefer $lthome/settings/snippets to $lthome/snippets and a few other minor fixes. Some breaking changes. Pls see [Release notes](https://github.com/rundis/lt-snippets/releases/tag/0.0.2)
+* 0.0.1 Initial release with fairly usable features
 
 ##License
 GPLv3 license, same as [Light Table](https://github.com/LightTable/LightTable). See LICENSE.md for the full text.

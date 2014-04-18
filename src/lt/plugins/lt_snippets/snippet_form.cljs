@@ -83,16 +83,36 @@
                       (object/raise this :clear)
                       (object/destroy! this)))
 
+
+(defn taborder [el]
+  (s/replace (.-className el) "snipvar-" ""))
+
+(defn tabstops [form]
+  (into [] (sort #(compare (taborder %1) (taborder %2)) (seq (dom/$$ "span[contenteditable=true]")))))
+
+(defn tabstops-count [form]
+  (count (tabstops form)))
+
+(defn tabstop-idx [form el]
+  (.indexOf (clj->js (tabstops form)) el))
+
+(defn next-tabstop-el [form el]
+  (nth (tabstops form) (inc (tabstop-idx form el))))
+
+(defn move-next-tab [form el]
+  (dom/focus (next-tabstop-el form el)))
+
+(defn prev-tabstop-el [form el]
+  (nth (tabstops form) (dec (tabstop-idx form el))))
+
+(defn move-prev-tab [form el]
+  (dom/focus (prev-tabstop-el form el)))
+
 (defn last-tabstop? [form el]
-  (=
-   (.-className el)
-   (.-className (last (dom/$$ "span[contenteditable=true]" form)))))
+  (= (tabstops-count form) (inc (tabstop-idx form el))))
 
 (defn first-tabstop? [form el]
-  (=
-   (.-className el)
-   (.-className (last (dom/$$ "span[contenteditable=true]" form)))))
-
+  (= 0 (tabstop-idx form el)))
 
 
 (defn complete-snippet-form [this ed form cb-obj]
@@ -126,28 +146,39 @@
                             (dom/on content "keyup" (fn [ev]
                                                       (set-mirrored-values content (.-target ev))))
 
-                            (dom/on content "keydown" (fn [ev]
-                                                        (let [kc (.-keyCode ev)
-                                                              el (.-target ev)]
-                                                        (cond
-                                                         (= 13 kc) (do
-                                                                     (dom/stop-propagation ev)
-                                                                     (dom/prevent ev)
-                                                                     (complete-snippet-form this ed content cb-obj))
+                            (dom/on content "keydown"
+                                    (fn [ev]
+                                      (let [kc (.-keyCode ev)
+                                            el (.-target ev)]
+                                        (cond
+                                         (= 13 kc) (do
+                                                     (dom/stop-propagation ev)
+                                                     (dom/prevent ev)
+                                                     (complete-snippet-form this ed content cb-obj))
+                                         (and (= 9 kc) (not (.-shiftKey ev))) (do
+                                                                                (dom/stop-propagation ev)
+                                                                                (dom/prevent ev)
+                                                                                (cond
+                                                                                 (last-tabstop? content el)
+                                                                                 (complete-snippet-form this ed content cb-obj)
+                                                                                 :else (move-next-tab form el)))
+                                         (and (= 9 kc)  (.-shiftKey ev)) (do
+                                                                           (dom/stop-propagation ev)
+                                                                           (dom/prevent ev)
+                                                                           (cond
+                                                                            (first-tabstop? content el)
+                                                                            (complete-snippet-form this ed content cb-obj)
+                                                                            :else (move-prev-tab form el)))
 
-                                                         (= 9 kc)  (when (last-tabstop? content el)
-                                                                     (dom/stop-propagation ev)
-                                                                     (dom/prevent ev)
-                                                                     (complete-snippet-form this ed content cb-obj))
-                                                         (= 27 kc) (do
-                                                                     (object/raise this :remove.snippet.form)
-                                                                     (editor/focus ed))))))
+                                         (= 27 kc) (do
+                                                     (object/raise this :remove.snippet.form)
+                                                     (editor/focus ed))))))
 
                             (object/merge! this (assoc info
                                                   :snipmark (editor/bookmark ed
-                                                                         {:line line :ch (-> info :pos :ch)}
-                                                                         {:widget content
-                                                                          :insertLeft true})))
+                                                                             {:line line :ch (-> info :pos :ch)}
+                                                                             {:widget content
+                                                                              :insertLeft true})))
                             (dom/focus (dom/$ "span[contenteditable=true]" content))
 
                             content))))
