@@ -111,12 +111,13 @@
     (and (:placeholder b) (not (:placeholder a))) false
     :else false))
 
+
 (defn get-tabstops[snippet]
   (->>
-   (re-seq #"\$\{\d+\:\w+\}|\$\d+" snippet)
+   (re-seq #"\$\{\d+\:[^\x0A\x0D\u2028\u2029\}]*\}|\$\d+" snippet)
    (filter #(not (= % "$0")))
    (map #(hash-map :num (re-find #"\d+" %)
-                   :placeholder (when-let [ph (re-find #"\$\{\d+\:(\w+)\}" %)] (last ph))
+                   :placeholder (when-let [ph (re-find #"\$\{\d+\:([^\x0A\x0D\u2028\u2029\}]*)\}" %)] (last ph))
                    :text %))
    (group-by :num)
    (map (fn [ts]
@@ -133,4 +134,4 @@
 
 
 (defn tokenize [snippet]
-  (filter (complement s/blank?) (js->clj (.split snippet #"(\$\{\d+\:\w+\}|\$\d+)"))))
+  (filter (complement s/blank?) (js->clj (.split snippet #"(\$\{\d+\:[^\x0A\x0D\u2028\u2029\}]*\}|\$\d+)"))))
