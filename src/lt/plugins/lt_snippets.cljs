@@ -106,10 +106,10 @@
 
 (def add-selector
   (selector {:items snippets/all-keymapped
-             :key :key
+             :key :name
              :transform #(str "<p>" (:name %4) "</p>"
                               "<p class='binding'>"
-                              (str "Key: " %3 (when-let [km (:shortcut %4)] (str " keymap: " km)) "</p>"))}))
+                              (str "<b>Key</b>: " (:key %4) (when-let [km (:shortcut %4)] (str " <b>keymap</b>: " km)) "</p>"))}))
 
 
 (cmd/command {:command :snippet.select
