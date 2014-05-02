@@ -58,6 +58,7 @@
     (load/js (files/join (files/parent path) (:helper snipgroup)) :sync))
   snipgroup)
 
+(.-snip$ js/window)
 
 
 (defn load-one [path]
@@ -165,6 +166,3 @@
   (if-let [code (re-find #"__([^\x0A\x0D\u2028\u2029\}]*)__" mirror)]
     ((js/window.eval (last code)) v)
     v))
-
-
-(js/window.eval "snip$.currPath(); snip$.groovy.toUpper")

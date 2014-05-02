@@ -1,5 +1,3 @@
-console.log("Loading helpers.js");
-
 window.snip$ = (function() {
 
   var path = require("path");
