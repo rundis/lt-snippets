@@ -12,15 +12,7 @@ div.snippet-form span[contenteditable=true]:empty:not(:focus):before {content:at
 
 div.snippet-form ::selection {background: var(placeholder-fg); color: var(highlight-fg);}
 
-div.snippet-form input {
-  font-size: inherit;
-  font-family: inherit;
-  color: inherit;
-  padding: 0 2px 0 2px;
-  margin: 2;
-  /*background: transparent;*/
-}
-
+div.snippet-form div.codeblock { display: inline-block;}
 
 div.snippet-select-form {
   display: inline-block;

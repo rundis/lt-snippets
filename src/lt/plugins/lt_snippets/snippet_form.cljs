@@ -11,15 +11,16 @@
 
 
 (defn tabstop-to-input [tabstop]
-  (str "<span contenteditable='true'"
-       " data-ph='" (if (:placeholder tabstop) (:placeholder tabstop) (str "#" (:num tabstop))) "'"
-       " data-ts='" (:text tabstop) "'"
-       " class='snipvar-" (:num tabstop) "'>"
-       (when-let [v (:placeholder tabstop)] v)
-       "</span>"))
+  (let [ph (snippets/resolve-placeholder (:placeholder tabstop))]
+    (str "<span contenteditable='true'"
+         " data-ph='" (if (:placeholder tabstop) ph (str "#" (:num tabstop))) "'"
+         " data-ts='" (:text tabstop) "'"
+         " class='replace snipvar-" (:num tabstop) "'>"
+         ph
+         "</span>")))
 
 (defn tabstop-to-mirror [tabstop]
-  (str "<span class='snipvar-" (:num tabstop) "'"
+  (str "<span class='replace snipvar-" (:num tabstop) "'"
        " data-ts='" (:text tabstop) "'" "></span>"))
 
 
@@ -41,11 +42,21 @@
     (.-innerHTML pre)))
 
 
+(defn inline-code-to-span [frag]
+  (str "<div class='replace codeblock' data-ts='" frag "'>" (snippets/resolve-placeholder frag) "</div>"))
+
+
+(defn resolve-inline-code [tokens]
+  (map #(if (snippets/inline-code-frag? %) (inline-code-to-span %) %) tokens))
+
+
+
 (defn snippet-to-form [snippet]
   (->>
    (s/replace snippet "$0" "")
    (escapeSnippet)
    (replace-tabstops)
+   (resolve-inline-code)
    (s/join)))
 
 
@@ -55,14 +66,18 @@
     text m))
 
 
+(defn snipvar-class [classnames]
+  (re-find #"snipvar-\d+" classnames))
+
+
 (defn set-mirrored-values [form el]
-  (let [c (.-className el)
+  (let [c (snipvar-class (.-className el))
         v (dom/html el)]
     (doseq [mirr (dom/$$ (str "." c ":not([contenteditable=true])")  form)]
       (dom/html mirr v))))
 
 (defn form-to-snippet [form snippet]
-  (when-let [inputs (dom/$$ :span form)]
+  (when-let [inputs (dom/$$ ".replace" form)]
     (map-replace
      (into {} (map #(hash-map (dom/attr % "data-ts") (dom/html %)) inputs))
      snippet)))
@@ -85,7 +100,7 @@
 
 
 (defn taborder [el]
-  (s/replace (.-className el) "snipvar-" ""))
+  (s/replace (snipvar-class (.-className el)) "snipvar-" ""))
 
 (defn tabstops [form]
   (into [] (sort #(compare (taborder %1) (taborder %2)) (seq (dom/$$ "span[contenteditable=true]")))))

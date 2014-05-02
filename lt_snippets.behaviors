@@ -1,4 +1,5 @@
-{:+ {:app [(:lt.objs.plugins/load-js "lt_snippets_compiled.js")
+{:+ {:app [(:lt.objs.plugins/load-js "helpers.js")
+           (:lt.objs.plugins/load-js "lt_snippets_compiled.js")
            (:lt.objs.plugins/load-css "snippets.css")]
      :lt-snippets [:lt.plugins.lt-snippets/maybe-select-snippet
                    :lt.plugins.lt-snippets/initiate-snippet

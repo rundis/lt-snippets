@@ -3,6 +3,7 @@
             [lt.objs.files :as files]
             [lt.objs.keyboard :as keyboard]
             [lt.objs.console :as console]
+            [lt.util.load :as load]
             [clojure.string :as s])
   (:require-macros [lt.macros :refer [defui behavior]]))
 
@@ -38,6 +39,7 @@
 (defn load-files [path snipgroup]
   (let [gm (:modes snipgroup)]
     {:modes gm
+     :helper (:helper snipgroup)
      :snippets (->>
                 (map (fn [item]
                       (if-let [file (:snippet-file item)]
@@ -50,11 +52,20 @@
                           (assoc item :modes gm))))
                 )}))
 
+
+(defn maybe-load-helpers [path snipgroup]
+  (when (and (:helper snipgroup) (.-snip$ js/window))
+    (load/js (files/join (files/parent path) (:helper snipgroup)) :sync))
+  snipgroup)
+
+
+
 (defn load-one [path]
   (->>
    (files/bomless-read path)
    (cljs.reader/read-string)
-   (load-files path)))
+   (load-files path)
+   (maybe-load-helpers path)))
 
 
 (defn load-all []
@@ -134,4 +145,22 @@
 
 
 (defn tokenize [snippet]
-  (filter (complement s/blank?) (js->clj (.split snippet #"(\$\{\d+\:[^\x0A\x0D\u2028\u2029\}]*\}|\$\d+)"))))
+  (filter (complement s/blank?) (js->clj (.split snippet #"(\$\{\d+\:[^\x0A\x0D\u2028\u2029\}]*\}|\$\d+|\$\{__[^\x0A\x0D\u2028\u2029\}]*__\})"))))
+
+
+(defn resolve-placeholder [ph]
+  (if-let [code (re-find #"__([^\x0A\x0D\u2028\u2029\}]*)__" ph)]
+    (js/window.eval (last code))
+    ph))
+
+(defn inline-code-frag? [frag]
+  (re-seq #"\$\{__[^\x0A\x0D\u2028\u2029\}]*__\}" frag))
+
+
+
+
+
+
+
+;;(eval-embedded "dill")
+
