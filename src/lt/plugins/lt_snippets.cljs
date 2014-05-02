@@ -48,16 +48,19 @@
 (behavior ::complete-snippet
           :desc "Insert a completed snippet into the given editor"
           :triggers #{:snippet.complete}
-          :reaction (fn [this ed snippet]
+          :reaction (fn [this ed snippet & {:keys [no-indent] :or {no-indent false}}]
                       (let [pos (editor/->cursor ed)
                             info {:ed ed :from pos}
                             cur (fn [e] (editor/->cursor e))]
                         (editor/insert-at-cursor ed snippet)
                         (if-not (.contains snippet "$0")
-                          (object/raise this :snippet.indent (assoc info :to (cur ed) :focuspos (cur ed)))
+                          (when-not no-indent
+                            (object/raise this :snippet.indent (assoc info :to (cur ed) :focuspos (cur ed))))
                           (when-let [cursor (find-pos ed pos "$0")]
                             (editor/replace ed cursor (update-in cursor [:ch] + 2 ) "")
-                            (object/raise this :snippet.indent (assoc info :to (cur ed) :focuspos cursor)))))))
+                            (if-not no-indent
+                              (object/raise this :snippet.indent (assoc info :to (cur ed) :focuspos cursor))
+                              (editor/move-cursor ed cursor)))))))
 
 
 (behavior ::initiate-snippet

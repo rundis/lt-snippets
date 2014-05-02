@@ -129,12 +129,13 @@
 (defn first-tabstop? [form el]
   (= 0 (tabstop-idx form el)))
 
-
 (defn complete-snippet-form [this ed form cb-obj]
-  (let [snip (form-to-snippet form (-> @this :item :snippet))]
+  (let [snip (form-to-snippet form (-> @this :item :snippet))
+        no-indent (boolean (-> @this :item :no-indent))]
     (object/raise this :remove.snippet.form)
     (editor/focus ed)
-    (object/raise cb-obj :snippet.complete ed snip)))
+    (object/raise cb-obj :snippet.complete ed snip :no-indent no-indent)))
+
 
 
 (object/object* ::inline-form
