@@ -42,14 +42,14 @@
      :helper (:helper snipgroup)
      :snippets (->>
                 (map (fn [item]
-                      (if-let [file (:snippet-file item)]
-                        (assoc item :snippet (load-if-exists (files/parent path) file))
-                        item))
-                    (:snippets snipgroup))
+                       (if-let [file (:snippet-file item)]
+                         (assoc item :snippet (load-if-exists (files/parent path) file))
+                         item))
+                     (:snippets snipgroup))
                 (map (fn [item]
                        (if-let [sm (:modes item)]
-                          (assoc item :modes (resolve-modes gm (:modes item)))
-                          (assoc item :modes gm))))
+                         (assoc item :modes (resolve-modes gm (:modes item)))
+                         (assoc item :modes gm))))
                 )}))
 
 
@@ -87,9 +87,9 @@
 (defn satisfies-modes? [modes item]
   (if (and (seq(clojure.set/intersection modes (-> item :modes :+)))
            (empty? (clojure.set/intersection modes (-> item :modes :-))))
-           true
-           false
-           ))
+    true
+    false
+    ))
 
 (defn by
   ([key snippets]
@@ -102,12 +102,12 @@
 
 (defn get-shortcuts []
   (mapcat identity (map (fn [keygroup]
-                         (map (fn [km]
-                                (hash-map :tag (first keygroup)
-                                          :shortcut (first km)
-                                          :key (last (first (first (rest km))))))
-                              (filter #(.contains (str %) ":snippet.by_key") (first (rest keygroup)))))
-                       (seq @keyboard/keys))))
+                          (map (fn [km]
+                                 (hash-map :tag (first keygroup)
+                                           :shortcut (first km)
+                                           :key (last (first (first (rest km))))))
+                               (filter #(.contains (str %) ":snippet.by_key") (first (rest keygroup)))))
+                        (seq @keyboard/keys))))
 
 
 (defn all-keymapped []
@@ -119,10 +119,10 @@
 
 
 (defn comp-tabstop [a b]
-   (cond
-    (and (:placeholder a) (not (:placeholder b))) true
-    (and (:placeholder b) (not (:placeholder a))) false
-    :else false))
+  (cond
+   (and (:placeholder a) (not (:placeholder b))) true
+   (and (:placeholder b) (not (:placeholder a))) false
+   :else false))
 
 
 (defn get-tabstops[snippet]
@@ -134,11 +134,11 @@
                    :text %))
    (group-by :num)
    (map (fn [ts]
-        (map-indexed (fn [idx tsi]
-                       (if (> idx 0)
-                         (assoc tsi :mirrored true)
-                         tsi))
-                     (sort (comp comp-tabstop) (last ts)))))
+          (map-indexed (fn [idx tsi]
+                         (if (> idx 0)
+                           (assoc tsi :mirrored true)
+                           tsi))
+                       (sort (comp comp-tabstop) (last ts)))))
    (mapcat identity)))
 
 
@@ -158,4 +158,13 @@
 (defn inline-code-frag? [frag]
   (re-seq #"\$\{__[^\x0A\x0D\u2028\u2029\}]*__\}" frag))
 
+(defn mirrored-transformation? [mirror]
+  (re-seq #"\$\{\d+\:__[^\x0A\x0D\u2028\u2029\}]*__\}" mirror))
 
+(defn resolve-mirror [mirror, v]
+  (if-let [code (re-find #"__([^\x0A\x0D\u2028\u2029\}]*)__" mirror)]
+    ((js/window.eval (last code)) v)
+    v))
+
+
+(js/window.eval "snip$.currPath(); snip$.groovy.toUpper")

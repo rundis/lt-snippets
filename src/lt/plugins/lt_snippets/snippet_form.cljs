@@ -70,11 +70,17 @@
   (re-find #"snipvar-\d+" classnames))
 
 
-(defn set-mirrored-values [form el]
-  (let [c (snipvar-class (.-className el))
-        v (dom/html el)]
-    (doseq [mirr (dom/$$ (str "." c ":not([contenteditable=true])")  form)]
+(defn set-mirror-value [mirr v]
+  (let [ts (dom/attr mirr "data-ts")]
+    (if (snippets/mirrored-transformation? ts)
+      (dom/html mirr (snippets/resolve-mirror ts v))
       (dom/html mirr v))))
+
+
+(defn set-mirrored-values [form el]
+  (let [c (snipvar-class (.-className el))]
+    (doseq [mirr (dom/$$ (str "." c ":not([contenteditable=true])")  form)]
+      (set-mirror-value mirr (dom/html el)))))
 
 (defn form-to-snippet [form snippet]
   (when-let [inputs (dom/$$ ".replace" form)]
