@@ -85,7 +85,7 @@
   (filter #(= key (:key %)) (degroup snippets)))
 
 (defn satisfies-modes? [modes item]
-  (if (and (clojure.set/intersection modes (-> item :modes :+))
+  (if (and (seq(clojure.set/intersection modes (-> item :modes :+)))
            (empty? (clojure.set/intersection modes (-> item :modes :-))))
            true
            false
@@ -96,6 +96,8 @@
    (by-key key snippets))
   ([key modes snippets]
    (filter (partial satisfies-modes? modes) (by-key key snippets))))
+
+(by "tc" #{:editor.groovy} (all) )
 
 
 (defn get-shortcuts []
@@ -157,10 +159,4 @@
   (re-seq #"\$\{__[^\x0A\x0D\u2028\u2029\}]*__\}" frag))
 
 
-
-
-
-
-
-;;(eval-embedded "dill")
 
