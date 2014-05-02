@@ -47,21 +47,25 @@ __NOTE: Will most likely change a bit in upcoming versions__
 ```clojure
 {
   :modes {:+ #{:editor.javascript}}
+  :helper "clojure-helper.js"             ; optional
   :snippets [
     {:name "Buster TestCase"
     :key "tc"
     :snippet-file "testcase.snip"
-    :modes {:+ #{:editor.typescript}} ; optional (probably rarely used)
+    :modes {:+ #{:editor.typescript}}     ; optional (probably rarely used)
 
     {:name "Buster Assert Equals"
     :key "ae"
+    :no-indent true                       ; optional
     :snippet "assert.equals($1, $2);$0"}]}
 ```
 
 ####Data format description
 * modes - What kind of editor will you be using the snippet in. Can be specified at snippet level as well (see below for detailed description)
+* helper - You may optionally specify a javascript file defining helper functions for inline scripts in your snippets. See [Inline scripts](#inline-scripts) below
 * name - Descriptive name used in menus/tooltips etc
 * key  - Identifier for the snippet. If more than one snippet matches you will be prompted to select one from a list of matching snippets
+* no-indent If you don't wish to have your snippet automatically indented, set this property to true
 * snippet - The actual snippet template. Mostly useful for one-liners
 * snippet-file - Filename of your snippet template.
   * If specified, overrides whatever specified in :snippet
@@ -113,16 +117,102 @@ When prompted to complete a snippet the placeholder value will be highlighted (i
 * Esc will close snippet completion and restore editor to prior state
 
 
+#### Inline scripts
+```Warning: Scripts are being executed using JavaScript eval. Use at your own risk ! ```
+
+
+##### Arbitrary scripts
+```
+   /** Created: ${__new Date()__} **/
+```
+When the snippet is expanded any blocks with ${__something__} will be replaced with what the expression resolves to (using javascript eval). In the example above the current date will be shown. You should note that eval only return the result of the last statement. To keep your snippets understandable, you're better off creating helper functions that you bundle in a helper script with your snippet definitions
+
+##### Script in tabstops
+```
+package ${1:__snip$.groovy.suggestPackage()__}
+
+/** Name: $2 **/
+class ${2:__snip$.currFileNameSansExt()__} {
+    ${__snip$.wrapSelection()__}$0
+}
+```
+
+Tabstops with code take precedence of tabstops with just numbering. The code within tabstops are resolved and shown as a placeholde value when the snippet is displayed for completion. Mirrored tabstops work as normal.
+In the example the snippet for completion with show the filename (if editor has been saved previously!) as classname, and its value mirrored in the comment section.
+
+* snip$ refers to a general helper object that ships with the plugin. It contains some useful functions described later
+* snip$.groovy might be a custom helper object containing functions for a custom collection of snippets
+
+##### Mirrored tabstops with transformations
+```Hello ${1:Dill} results in: ${1:__snip$.groovy.toUpper__}```
+
+When this snippet is displayed for user input, it will display ```Hello dill results in: DILL``` Changing the text of the tabstop ${1:Dill} will invoke the transformation funtion of the mirror.
+Transformation functions should accept one parameter, the value of the "master" tabstop at any given time. The function should most likely also return av value.
+
+
+##### Sample helper functions file
+```JavaScript
+(function(window) {
+  function suggestPackage() {
+    var p = snip$.currPath();
+    if(p) {
+      var parts = snip$.path.dirname(p).split(/src\/main\/groovy\/|src\/test\/groovy\//);
+      if(parts.length === 2) {
+        return parts[1].replace(/\//g, ".");
+      }
+    }
+  }
+
+  function toUpper(txt) {
+    return txt ? txt.toUpperCase() : txt;
+  }
+
+  snip$.groovy = {
+    suggestPackage: suggestPackage,
+    toUpper: toUpper
+  };
+
+})(window);
+```
+
+There are few limits to what you can put in your helper files. You may use require, call javascript compiled from ClojureScript from LightTable. You may wish to call CodeMirror directly for some things etc.
+Calling the javascript outputted from the clojure compiler might not always be for the faint hearted though.
+
+
+It the sample above, the custom object has been added to the already globally available snip$ object.
+
+
+##### Default helper functions
+The following functions are included by default exposed through snip$ (on the window object)
+
+currPath: currPath,
+    currFileName: currFileName,
+    currFileNameSansExt: currFileNameSansExt,
+    path: path,
+    wrapSelection: wrapSelection,
+    wrapSelectionEager: wrapSelectionEager
+
+
+|Function/Property   | Description |
+| -----              | ----        |
+| currFileName       | Name of file for current active editor. Returns null editor is transient|
+| currFileNameSansExt| Same as above but without file extension |
+| path               | Node path object. Handy for working with paths |
+| wrapSelection      | Useful in templates when you wish your snippet to wrap-around an expression/selection you have made prior to expanding a snippet. If you esc from a snippet completion, the selection is not restored, but its in your clipboard so it's not lost ! |
+| wrapSelectionEager | Same as above, but will select current line if no selection has been made prior to expanding the snippet |
+
+
 
 ##Roadmap
 * More keyboard friendly key conflict resolution
 * Feature to use common key prefix to allow easy setup of all snippet shortcuts ?
 * Configurable locations for snippet files
-* pre/post code snippets ?
 * Variables with select values
+* Claire integration ? (Ido like selection)
 
 
 ##Version
+* 0.0.4 Scripting inside your snippets for tabstops, mirrors and arbitrary script code. A few bugs were squashed along the way
 * 0.0.3 Fix for behaviors not loading
 * 0.0.2 Support placeholders, escape html, prefer $lthome/settings/snippets to $lthome/snippets and a few other minor fixes. Some breaking changes. Pls see [Release notes](https://github.com/rundis/lt-snippets/releases/tag/0.0.2)
 * 0.0.1 Initial release with fairly usable features
