@@ -128,10 +128,10 @@
 
 (defn get-tabstops[snippet]
   (->>
-   (re-seq #"\$\{\d+\:[^\x0A\x0D\u2028\u2029\}]*\}|\$\d+" snippet)
+   (re-seq #"\$\{\d+\:__[^\x0A\x0D\u2028\u2029\__]*__\}|\$\{\d+\:[^\x0A\x0D\u2028\u2029\}]*\}|\$\d+" snippet)
    (filter #(not (= % "$0")))
    (map #(hash-map :num (re-find #"\d+" %)
-                   :placeholder (when-let [ph (re-find #"\$\{\d+\:([^\x0A\x0D\u2028\u2029\}]*)\}" %)] (last ph))
+                   :placeholder (when-let [ph (re-find #"\$\{\d+\:([^\x0A\x0D\u2028\u2029]*)\}" %)] (last ph))
                    :text %))
    (group-by :num)
    (map (fn [ts]
@@ -148,21 +148,26 @@
 
 
 (defn tokenize [snippet]
-  (filter (complement s/blank?) (js->clj (.split snippet #"(\$\{\d+\:[^\x0A\x0D\u2028\u2029\}]*\}|\$\d+|\$\{__[^\x0A\x0D\u2028\u2029\}]*__\})"))))
+  (js->clj (.split snippet #"(\$\{\d+\:__[^\x0A\x0D\u2028\u2029\__]*__\}|\$\{\d+\:[^\x0A\x0D\u2028\u2029\}]*\}|\$\d+|\$\{__[^\x0A\x0D\u2028\u2029\__]*__\})")))
 
 
 (defn resolve-placeholder [ph]
-  (if-let [code (re-find #"__([^\x0A\x0D\u2028\u2029\}]*)__" ph)]
+  (if-let [code (re-find #"__([^\x0A\x0D\u2028\u2029]*)__" ph)]
     (js/window.eval (last code))
     ph))
 
+
 (defn inline-code-frag? [frag]
-  (re-seq #"\$\{__[^\x0A\x0D\u2028\u2029\}]*__\}" frag))
+  (re-seq #"\$\{__[^\x0A\x0D\u2028\u2029\__]*__\}" frag))
+
 
 (defn mirrored-transformation? [mirror]
-  (re-seq #"\$\{\d+\:__[^\x0A\x0D\u2028\u2029\}]*__\}" mirror))
+  (re-seq #"\$\{\d+\:__[^\x0A\x0D\u2028\u2029\__]*__\}" mirror))
+
 
 (defn resolve-mirror [mirror, v]
-  (if-let [code (re-find #"__([^\x0A\x0D\u2028\u2029\}]*)__" mirror)]
+  (if-let [code (re-find #"__([^\x0A\x0D\u2028\u2029\__]*)__" mirror)]
     ((js/window.eval (last code)) v)
     v))
+
+
