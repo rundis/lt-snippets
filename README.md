@@ -149,6 +149,9 @@ In the example the snippet for completion with show the filename (if editor has 
 When this snippet is displayed for user input, it will display ```Hello dill results in: DILL``` Changing the text of the tabstop ${1:Dill} will invoke the transformation funtion of the mirror.
 Transformation functions should accept one parameter, the value of the "master" tabstop at any given time. The function should most likely also return av value.
 
+For the simple example above you could actually do this
+```Hello ${1:Dill} results in: ${1:__(function (txt) { return txt.toUpperCase(); })__}```
+
 
 ##### Sample helper functions file
 ```JavaScript
@@ -212,6 +215,7 @@ currPath: currPath,
 
 
 ##Version
+* 0.0.5 Allow inline scripts and placeholders with code to have braces
 * 0.0.4 Scripting inside your snippets for tabstops, mirrors and arbitrary script code. A few bugs were squashed along the way
 * 0.0.3 Fix for behaviors not loading
 * 0.0.2 Support placeholders, escape html, prefer $lthome/settings/snippets to $lthome/snippets and a few other minor fixes. Some breaking changes. Pls see [Release notes](https://github.com/rundis/lt-snippets/releases/tag/0.0.2)
