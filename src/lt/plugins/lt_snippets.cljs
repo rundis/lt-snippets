@@ -28,7 +28,7 @@
 (defn clear-token [ed]
   (let [token (->token ed)
         line (:line (editor/->cursor ed))]
-    (editor/replace ed {:line line :ch (:start token)} {:line line :ch (:stop token)} "")))
+    (editor/replace ed {:line line :ch (:start token)} {:line line :ch (:end token)} "")))
 
 (defn snippet-by-token [ed]
   (snippets/by (:string (->token ed)) (:tags @ed) (snippets/all)))
@@ -38,11 +38,13 @@
           :desc "Indent inserted snippet (and move cursor accordingly)"
           :triggers #{:snippet.indent}
           :reaction (fn [this info]
-                      (editor/set-selection (:ed info) (:from info) (:to info))
-                      (editor/indent-selection (:ed info) "smart")
-                      (editor/move-cursor (:ed info) (:focuspos info))
-                      (editor/indent-selection (:ed info) "smart")
-                      (editor/focus (:ed info))))
+                      (let [bm (editor/bookmark (:ed info) (:focuspos info) nil)]
+                        (editor/set-selection (:ed info) (:from info) (:to info))
+                        (editor/indent-selection (:ed info) "smart")
+                        (editor/move-cursor (:ed info) (lt.util.cljs/js->clj (.find bm)))
+                        (.clear bm)
+                        (editor/indent-selection (:ed info) "smart")
+                        (editor/focus (:ed info)))))
 
 
 (behavior ::complete-snippet
@@ -53,8 +55,8 @@
                             info {:ed ed :from pos}
                             cur (fn [e] (editor/->cursor e))]
                         (editor/insert-at-cursor ed snippet)
-                        (if-not (.contains snippet "$0")
-                          (when-not no-indent
+                         (if-not (.contains snippet "$0")
+                           (when-not no-indent
                             (object/raise this :snippet.indent (assoc info :to (cur ed) :focuspos (cur ed))))
                           (when-let [cursor (find-pos ed pos "$0")]
                             (editor/replace ed cursor (update-in cursor [:ch] + 2 ) "")

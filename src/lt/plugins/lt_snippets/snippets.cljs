@@ -22,7 +22,7 @@
   (let [fullpath (files/join path file)]
     (if-not (files/exists? fullpath)
       fullpath
-      (files/bomless-read fullpath))))
+      (s/replace(files/bomless-read fullpath) #"\n$" ""))))
 
 
 (defn resolve-modes [a b]
@@ -58,15 +58,17 @@
     (load/js (files/join (files/parent path) (:helper snipgroup)) :sync))
   snipgroup)
 
-(.-snip$ js/window)
-
 
 (defn load-one [path]
-  (->>
-   (files/bomless-read path)
-   (cljs.reader/read-string)
-   (load-files path)
-   (maybe-load-helpers path)))
+  (try
+   (->>
+    (files/bomless-read path)
+    (cljs.reader/read-string)
+    (load-files path)
+    (maybe-load-helpers path))
+  (catch :default e
+    (console/log (str "Not able to read: " path)) e)))
+
 
 
 (defn load-all []
@@ -98,8 +100,6 @@
   ([key modes snippets]
    (filter (partial satisfies-modes? modes) (by-key key snippets))))
 
-(by "tc" #{:editor.groovy} (all) )
-
 
 (defn get-shortcuts []
   (mapcat identity (map (fn [keygroup]
@@ -126,12 +126,27 @@
    :else false))
 
 
+(def patterns
+  {:ts-ph-js  "\\$\\{\\d+\\:__[^\\x0A\\x0D\\u2028\\u2029\\__]*__\\}"
+   :ts-ph "\\$\\{\\d+\\:[^\\x0A\\x0D\\u2028\\u2029\\}]*\\}"
+   :ts "\\$\\d+"
+   :frag "\\$\\{__[^\\x0A\\x0D\\u2028\\u2029\\__]*__\\}"
+   :js-code "__([^\\x0A\\x0D\\u2028\\u2029\\__]*)__"
+   :ts-ph-js-group "\\$\\{\\d+\\:(__[^\\x0A\\x0D\\u2028\\u2029\\__]*__)\\}"
+   :ts-ph-group "\\$\\{\\d+\\:([^\\x0A\\x0D\\u2028\\u2029\\}]*)\\}"
+   })
+
+(defn pattern-join [ps j]
+  (s/join j (clj->js (map #(% patterns) ps))))
+
+
 (defn get-tabstops[snippet]
   (->>
-   (re-seq #"\$\{\d+\:__[^\x0A\x0D\u2028\u2029\__]*__\}|\$\{\d+\:[^\x0A\x0D\u2028\u2029\}]*\}|\$\d+" snippet)
+   (re-seq (re-pattern (pattern-join [:ts-ph-js :ts-ph :ts] "|")) snippet)
    (filter #(not (= % "$0")))
    (map #(hash-map :num (re-find #"\d+" %)
-                   :placeholder (when-let [ph (re-find #"\$\{\d+\:([^\x0A\x0D\u2028\u2029]*)\}" %)] (last ph))
+                   :placeholder (when-let [ph  (re-find (re-pattern (pattern-join [:ts-ph-js-group :ts-ph-group] "|")) %)]
+                                  (or (nth ph 1) (last ph)))
                    :text %))
    (group-by :num)
    (map (fn [ts]
@@ -148,25 +163,25 @@
 
 
 (defn tokenize [snippet]
-  (js->clj (.split snippet #"(\$\{\d+\:__[^\x0A\x0D\u2028\u2029\__]*__\}|\$\{\d+\:[^\x0A\x0D\u2028\u2029\}]*\}|\$\d+|\$\{__[^\x0A\x0D\u2028\u2029\__]*__\})")))
-
+  (js->clj (.split
+            snippet
+            (re-pattern (str "(" (pattern-join [:ts-ph-js :ts-ph :ts :frag] "|") ")")))))
 
 (defn resolve-placeholder [ph]
-  (if-let [code (re-find #"__([^\x0A\x0D\u2028\u2029]*)__" ph)]
+  (if-let [code (re-find (re-pattern (:js-code patterns)) ph)]
     (js/window.eval (last code))
     ph))
 
 
 (defn inline-code-frag? [frag]
-  (re-seq #"\$\{__[^\x0A\x0D\u2028\u2029\__]*__\}" frag))
-
+  (re-seq (re-pattern (:frag patterns)) frag))
 
 (defn mirrored-transformation? [mirror]
-  (re-seq #"\$\{\d+\:__[^\x0A\x0D\u2028\u2029\__]*__\}" mirror))
+  (re-seq (re-pattern (:ts-ph-js patterns)) mirror))
 
 
 (defn resolve-mirror [mirror, v]
-  (if-let [code (re-find #"__([^\x0A\x0D\u2028\u2029\__]*)__" mirror)]
+  (if-let [code (re-find (re-pattern (:js-code patterns)) mirror)]
     ((js/window.eval (last code)) v)
     v))
 
