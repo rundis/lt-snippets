@@ -70,7 +70,6 @@
     (console/log (str "Not able to read: " path)) e)))
 
 
-
 (defn load-all []
   (->>
    (files/filter-walk (fn [path] (= (files/ext path) "edn")) (get-snippet-dir))
@@ -167,9 +166,16 @@
             snippet
             (re-pattern (str "(" (pattern-join [:ts-ph-js :ts-ph :ts :frag] "|") ")")))))
 
+(defn safe-eval [frag]
+  (try
+    (js/window.eval frag)
+    (catch :default e
+      (console/error (str "Failed to evaluate js: " frag)))))
+
+
 (defn resolve-placeholder [ph]
   (if-let [code (re-find (re-pattern (:js-code patterns)) ph)]
-    (js/window.eval (last code))
+    (safe-eval (last code))
     ph))
 
 
@@ -182,7 +188,10 @@
 
 (defn resolve-mirror [mirror, v]
   (if-let [code (re-find (re-pattern (:js-code patterns)) mirror)]
-    ((js/window.eval (last code)) v)
+    (let [js-fun  (safe-eval (last code))]
+      (if js-fun
+        (js-fun v)
+        (console/error (str "Error resolving mirror. Expression does not resolve to a (valid) function: " (last code)))))
     v))
 
 

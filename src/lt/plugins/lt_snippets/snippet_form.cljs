@@ -135,6 +135,10 @@
 (defn first-tabstop? [form el]
   (= 0 (tabstop-idx form el)))
 
+(defn first-tabstop [form]
+  (first (tabstops form)))
+
+
 (defn complete-snippet-form [this ed form cb-obj]
   (let [snip (form-to-snippet form (-> @this :item :snippet))
         no-indent (boolean (-> @this :item :no-indent))]
@@ -201,7 +205,7 @@
                                                                              {:line line :ch (-> info :pos :ch)}
                                                                              {:widget content
                                                                               :insertLeft true})))
-                            (dom/focus (dom/$ "span[contenteditable=true]" content))
+                            (dom/focus (first-tabstop content))
 
                             content))))
 
