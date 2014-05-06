@@ -215,6 +215,7 @@ currPath: currPath,
 
 
 ##Version
+* 0.0.6 Small bugfixes
 * 0.0.5 Allow inline scripts and placeholders with code to have braces
 * 0.0.4 Scripting inside your snippets for tabstops, mirrors and arbitrary script code. A few bugs were squashed along the way
 * 0.0.3 Fix for behaviors not loading

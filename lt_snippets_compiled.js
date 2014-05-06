@@ -693,9 +693,9 @@ goog.require('lt.plugins.lt_snippets.select_form');
 goog.require('lt.objs.editor.pool');
 goog.require('lt.plugins.lt_snippets.snippets');
 goog.require('lt.objs.command');
-lt.plugins.lt_snippets.find_pos = (function find_pos(ed,from,txt){return cljs.core.first.call(null,cljs.core.map.call(null,(function (p1__8341_SHARP_){return cljs.core.dissoc.call(null,cljs.core.assoc.call(null,p1__8341_SHARP_,new cljs.core.Keyword(null,"ch","ch",1013907415),new cljs.core.Keyword(null,"text","text",1017460895).cljs$core$IFn$_invoke$arity$1(p1__8341_SHARP_).indexOf(txt)),new cljs.core.Keyword(null,"text","text",1017460895));
-}),cljs.core.filter.call(null,(function (p1__8340_SHARP_){return new cljs.core.Keyword(null,"text","text",1017460895).cljs$core$IFn$_invoke$arity$1(p1__8340_SHARP_).contains(txt);
-}),cljs.core.map.call(null,(function (p1__8339_SHARP_){return cljs.core.PersistentHashMap.fromArrays.call(null,[new cljs.core.Keyword(null,"line","line",1017226086),new cljs.core.Keyword(null,"text","text",1017460895)],[p1__8339_SHARP_,lt.objs.editor.line_handle.call(null,ed,p1__8339_SHARP_).text]);
+lt.plugins.lt_snippets.find_pos = (function find_pos(ed,from,txt){return cljs.core.first.call(null,cljs.core.map.call(null,(function (p1__8772_SHARP_){return cljs.core.dissoc.call(null,cljs.core.assoc.call(null,p1__8772_SHARP_,new cljs.core.Keyword(null,"ch","ch",1013907415),new cljs.core.Keyword(null,"text","text",1017460895).cljs$core$IFn$_invoke$arity$1(p1__8772_SHARP_).indexOf(txt)),new cljs.core.Keyword(null,"text","text",1017460895));
+}),cljs.core.filter.call(null,(function (p1__8771_SHARP_){return new cljs.core.Keyword(null,"text","text",1017460895).cljs$core$IFn$_invoke$arity$1(p1__8771_SHARP_).contains(txt);
+}),cljs.core.map.call(null,(function (p1__8770_SHARP_){return cljs.core.PersistentHashMap.fromArrays.call(null,[new cljs.core.Keyword(null,"line","line",1017226086),new cljs.core.Keyword(null,"text","text",1017460895)],[p1__8770_SHARP_,lt.objs.editor.line_handle.call(null,ed,p1__8770_SHARP_).text]);
 }),cljs.core.range.call(null,new cljs.core.Keyword(null,"line","line",1017226086).cljs$core$IFn$_invoke$arity$1(from),(1 + new cljs.core.Keyword(null,"line","line",1017226086).cljs$core$IFn$_invoke$arity$1(lt.objs.editor.__GT_cursor.call(null,ed))))))));
 });
 lt.plugins.lt_snippets.__GT_token = (function __GT_token(ed){return lt.objs.editor.__GT_token.call(null,ed,lt.objs.editor.__GT_cursor.call(null,ed));
@@ -716,7 +716,7 @@ lt.object.behavior_STAR_.call(null,new cljs.core.Keyword("lt.plugins.lt-snippets
 * @param {...*} var_args
 */
 lt.plugins.lt_snippets.__BEH__complete_snippet = (function() { 
-var __BEH__complete_snippet__delegate = function (this$,ed,snippet,p__8342){var map__8344 = p__8342;var map__8344__$1 = ((cljs.core.seq_QMARK_.call(null,map__8344))?cljs.core.apply.call(null,cljs.core.hash_map,map__8344):map__8344);var no_indent = cljs.core.get.call(null,map__8344__$1,new cljs.core.Keyword(null,"no-indent","no-indent",4334515626),false);var pos = lt.objs.editor.__GT_cursor.call(null,ed);var info = new cljs.core.PersistentArrayMap(null, 2, [new cljs.core.Keyword(null,"ed","ed",1013907473),ed,new cljs.core.Keyword(null,"from","from",1017056028),pos], null);var cur = ((function (pos,info){
+var __BEH__complete_snippet__delegate = function (this$,ed,snippet,p__8773){var map__8775 = p__8773;var map__8775__$1 = ((cljs.core.seq_QMARK_.call(null,map__8775))?cljs.core.apply.call(null,cljs.core.hash_map,map__8775):map__8775);var no_indent = cljs.core.get.call(null,map__8775__$1,new cljs.core.Keyword(null,"no-indent","no-indent",4334515626),false);var pos = lt.objs.editor.__GT_cursor.call(null,ed);var info = new cljs.core.PersistentArrayMap(null, 2, [new cljs.core.Keyword(null,"ed","ed",1013907473),ed,new cljs.core.Keyword(null,"from","from",1017056028),pos], null);var cur = ((function (pos,info){
 return (function (e){return lt.objs.editor.__GT_cursor.call(null,e);
 });})(pos,info))
 ;lt.objs.editor.insert_at_cursor.call(null,ed,snippet);
@@ -740,18 +740,18 @@ if(cljs.core.not.call(null,no_indent))
 }
 };
 var __BEH__complete_snippet = function (this$,ed,snippet,var_args){
-var p__8342 = null;if (arguments.length > 3) {
-  p__8342 = cljs.core.array_seq(Array.prototype.slice.call(arguments, 3),0);} 
-return __BEH__complete_snippet__delegate.call(this,this$,ed,snippet,p__8342);};
+var p__8773 = null;if (arguments.length > 3) {
+  p__8773 = cljs.core.array_seq(Array.prototype.slice.call(arguments, 3),0);} 
+return __BEH__complete_snippet__delegate.call(this,this$,ed,snippet,p__8773);};
 __BEH__complete_snippet.cljs$lang$maxFixedArity = 3;
-__BEH__complete_snippet.cljs$lang$applyTo = (function (arglist__8361){
-var this$ = cljs.core.first(arglist__8361);
-arglist__8361 = cljs.core.next(arglist__8361);
-var ed = cljs.core.first(arglist__8361);
-arglist__8361 = cljs.core.next(arglist__8361);
-var snippet = cljs.core.first(arglist__8361);
-var p__8342 = cljs.core.rest(arglist__8361);
-return __BEH__complete_snippet__delegate(this$,ed,snippet,p__8342);
+__BEH__complete_snippet.cljs$lang$applyTo = (function (arglist__8782){
+var this$ = cljs.core.first(arglist__8782);
+arglist__8782 = cljs.core.next(arglist__8782);
+var ed = cljs.core.first(arglist__8782);
+arglist__8782 = cljs.core.next(arglist__8782);
+var snippet = cljs.core.first(arglist__8782);
+var p__8773 = cljs.core.rest(arglist__8782);
+return __BEH__complete_snippet__delegate(this$,ed,snippet,p__8773);
 });
 __BEH__complete_snippet.cljs$core$IFn$_invoke$arity$variadic = __BEH__complete_snippet__delegate;
 return __BEH__complete_snippet;
@@ -781,10 +781,10 @@ lt.plugins.lt_snippets.lt_snippets = lt.object.create.call(null,new cljs.core.Ke
 lt.plugins.lt_snippets.__BEH__set_selected = (function __BEH__set_selected(this$,v){return lt.objs.sidebar.command.exec_active_BANG_.call(null,v);
 });
 lt.object.behavior_STAR_.call(null,new cljs.core.Keyword("lt.plugins.lt-snippets","set-selected","lt.plugins.lt-snippets/set-selected",2891183608),new cljs.core.Keyword(null,"reaction","reaction",4441361819),lt.plugins.lt_snippets.__BEH__set_selected,new cljs.core.Keyword(null,"triggers","triggers",2516997421),new cljs.core.PersistentHashSet(null, new cljs.core.PersistentArrayMap(null, 1, [new cljs.core.Keyword(null,"select","select",4402849902),null], null), null));
-lt.plugins.lt_snippets.selector = (function selector(opts){var G__8346 = lt.objs.sidebar.command.filter_list.call(null,opts);lt.object.add_behavior_BANG_.call(null,G__8346,new cljs.core.Keyword("lt.plugins.lt-snippets","set-selected","lt.plugins.lt-snippets/set-selected",2891183608));
-return G__8346;
+lt.plugins.lt_snippets.selector = (function selector(opts){var G__8777 = lt.objs.sidebar.command.filter_list.call(null,opts);lt.object.add_behavior_BANG_.call(null,G__8777,new cljs.core.Keyword("lt.plugins.lt-snippets","set-selected","lt.plugins.lt-snippets/set-selected",2891183608));
+return G__8777;
 });
-lt.plugins.lt_snippets.add_selector = lt.plugins.lt_snippets.selector.call(null,new cljs.core.PersistentArrayMap(null, 3, [new cljs.core.Keyword(null,"items","items",1114430258),lt.plugins.lt_snippets.snippets.all_keymapped,new cljs.core.Keyword(null,"key","key",1014010321),new cljs.core.Keyword(null,"name","name",1017277949),new cljs.core.Keyword(null,"transform","transform",2066570974),(function (p1__8348_SHARP_,p2__8349_SHARP_,p3__8350_SHARP_,p4__8347_SHARP_){return [cljs.core.str("<p>"),cljs.core.str(new cljs.core.Keyword(null,"name","name",1017277949).cljs$core$IFn$_invoke$arity$1(p4__8347_SHARP_)),cljs.core.str("</p>"),cljs.core.str("<p class='binding'>"),cljs.core.str([cljs.core.str("<b>Key</b>: "),cljs.core.str(new cljs.core.Keyword(null,"key","key",1014010321).cljs$core$IFn$_invoke$arity$1(p4__8347_SHARP_)),cljs.core.str((function (){var temp__4092__auto__ = new cljs.core.Keyword(null,"shortcut","shortcut",671403960).cljs$core$IFn$_invoke$arity$1(p4__8347_SHARP_);if(cljs.core.truth_(temp__4092__auto__))
+lt.plugins.lt_snippets.add_selector = lt.plugins.lt_snippets.selector.call(null,new cljs.core.PersistentArrayMap(null, 3, [new cljs.core.Keyword(null,"items","items",1114430258),lt.plugins.lt_snippets.snippets.all_keymapped,new cljs.core.Keyword(null,"key","key",1014010321),new cljs.core.Keyword(null,"name","name",1017277949),new cljs.core.Keyword(null,"transform","transform",2066570974),(function (p1__8779_SHARP_,p2__8780_SHARP_,p3__8781_SHARP_,p4__8778_SHARP_){return [cljs.core.str("<p>"),cljs.core.str(new cljs.core.Keyword(null,"name","name",1017277949).cljs$core$IFn$_invoke$arity$1(p4__8778_SHARP_)),cljs.core.str("</p>"),cljs.core.str("<p class='binding'>"),cljs.core.str([cljs.core.str("<b>Key</b>: "),cljs.core.str(new cljs.core.Keyword(null,"key","key",1014010321).cljs$core$IFn$_invoke$arity$1(p4__8778_SHARP_)),cljs.core.str((function (){var temp__4092__auto__ = new cljs.core.Keyword(null,"shortcut","shortcut",671403960).cljs$core$IFn$_invoke$arity$1(p4__8778_SHARP_);if(cljs.core.truth_(temp__4092__auto__))
 {var km = temp__4092__auto__;return [cljs.core.str(" <b>keymap</b>: "),cljs.core.str(km)].join('');
 } else
 {return null;
