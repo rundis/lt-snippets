@@ -11,6 +11,7 @@ You probably will need to reload behaviors for the plugin to work.
 
 
 ##Getting started
+* Check out the [Screencast](https://www.youtube.com/watch?v=I6iuXOw3HDQ)
 * A few snippets for inspiration/trial: [My LightTable Settings](https://github.com/rundis/LightTable-settings). My settings/snippets directory uses submodules to pull in a couple of snippet collections
     * [lt-buster-snippets](https://github.com/rundis/lt-buster-snippets) - Snippets for buster tests handy when using the [InstaBuster](https://github.com/busterjs/lt-instabuster) plugin
     * [lt-plugin-snippets](https://github.com/rundis/lt-plugin-snippets) - Handy snippets when doing Light Table plugin development
