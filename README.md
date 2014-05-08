@@ -31,6 +31,24 @@ Its quite easy setting up shortcuts, just edit your user.keymap file.
 ###Invoke snippet by expanding key
 Type the key in your editor and then select the command __Snippets: Expand by editor token__.
 
+###Snippet hints/autocomplete (Incubating feature)
+Snippets that are applicable for the current editor will be shown in the autocomplete/hints resultlist. When you select an snippet item, it will invoke the snippet.
+
+Caveats:
+* At the moment the autocomplete/hints plugin in Light Table core seems to be a bit limited. (Either that or I haven't grocked it properly !)
+* If you have two snippets with same key matching your editor tags, you will be prompted with a select form, regardless of which of the conflicting items you picked.
+* Depending on how other plugins have implemented autocomplete functionality, the autocomplete hints may or may not be shown. Example: At the moment it works with the default javascript plugin, but not with the ternjs. plugin.
+
+
+Should you find in annoying, just disable the behavior:
+```clojure
+;; in your user behaviors file
+
+;; in the section(/key) for subtracting behaviors
+:- {
+ :editor [:lt.plugins.lt-snippets/use-local-hints] }
+```
+
 
 ###Key conflicts
 When more than one snippet matches a given key (for a given editor type), a select list will popup inline prompting you to select one of the alternatives.
@@ -216,6 +234,7 @@ currPath: currPath,
 
 
 ##Version
+* 0.0.7 Incubating feature: Show applicable snippets in autocomplete results
 * 0.0.6 Small bugfixes
 * 0.0.5 Allow inline scripts and placeholders with code to have braces
 * 0.0.4 Scripting inside your snippets for tabstops, mirrors and arbitrary script code. A few bugs were squashed along the way

@@ -99,6 +99,11 @@
   ([key modes snippets]
    (filter (partial satisfies-modes? modes) (by-key key snippets))))
 
+(defn by-mode [modes snippets]
+  (->>
+   (degroup snippets)
+   (filter (partial satisfies-modes? modes))))
+
 
 (defn get-shortcuts []
   (mapcat identity (map (fn [keygroup]
