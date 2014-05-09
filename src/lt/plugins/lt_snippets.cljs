@@ -92,11 +92,19 @@
                                              :pos (editor/->cursor ed)
                                              :items items})))))
 
+(defn sel-cb [ed fun c]
+  (fun "")
+  (object/raise lt-snippets :snippet.initiate ed (get (js->clj c) "item")))
+
 
 (defn snip-hints [ed]
-  (flatten
-   (map #(vec [#js {:completion (str (:key %) " - " (:name %) " (snip)")}])
-        (snippets/by-mode (:tags @ed) (snippets/all)))))
+    (flatten
+     (map #(vec [#js {:select (partial sel-cb ed)
+                      :text (str (:key %) " - " (:name %) " (snip)")
+                      :completion (:key %)
+                      :item %}])
+          (snippets/by-mode (:tags @ed) (snippets/all)))))
+
 
 (behavior ::use-local-hints
           :desc "Enables applicable snippets to be shown in autocomplete"
@@ -106,25 +114,6 @@
                         (object/merge! editor {::token token})
                         (object/raise auto-complete/hinter :refresh!))
                       (concat hints (snip-hints editor))))
-
-(behavior ::after-hint-select
-          :desc "Handles select of a snippet from autocomplete"
-          :triggers #{:after.hint.select}
-          :debounce 10 ;; Not nice, but couldn't figure out a better way ensure that default handler for hinter select has completed
-          :reaction (fn [this info]
-                      (editor/replace (:ed info) (:start info) (:end info) "")
-                      (object/raise this :snippet.select.maybe (:ed info) (snippets/by (:key info) (:tags @(:ed info)) (snippets/all)))))
-
-
-(behavior ::select
-          :triggers #{:select}
-          :reaction (fn [this c]
-                      (when-let [key (last (re-find #"(\w*) - [\w|\W]* \(snip\)" (.-completion c)))]
-                        (let [start {:line (:line (:token @this)) :ch (:start (:token @this))}]
-                          (object/raise lt-snippets :after.hint.select {:start start
-                                                                        :end (update-in start [:ch] + (count (.-completion c)))
-                                                                        :key key
-                                                                        :ed (:ed @this)})))))
 
 (object/object* ::lt-snippets
                 :tags [:lt-snippets]

@@ -3,10 +3,8 @@
            (:lt.objs.plugins/load-css "snippets.css")]
 
      :editor [:lt.plugins.lt-snippets/use-local-hints]
-     :hinter [:lt.plugins.lt-snippets/select]
      :lt-snippets [:lt.plugins.lt-snippets/maybe-select-snippet
                    :lt.plugins.lt-snippets/initiate-snippet
                    :lt.plugins.lt-snippets/complete-snippet
-                   :lt.plugins.lt-snippets/indent-snippet
-                   :lt.plugins.lt-snippets/after-hint-select]
+                   :lt.plugins.lt-snippets/indent-snippet]
      :inline.snippet.form [:lt.plugins.lt-snippets.snippet-form/remove-snippet-form]}}
