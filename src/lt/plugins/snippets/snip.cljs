@@ -1,4 +1,4 @@
-(ns lt.plugins.lt-snippets.snippets
+(ns lt.plugins.snippets.snip
   (:require [lt.object :as object]
             [lt.objs.files :as files]
             [lt.objs.keyboard :as keyboard]
@@ -7,16 +7,17 @@
             [clojure.string :as s])
   (:require-macros [lt.macros :refer [defui behavior]]))
 
-
 (def snippet-dir (files/lt-user-dir "snippets"))
 
 (defn get-snippet-dir []
-  (let [default (files/lt-user-dir "settings/snippets")]
+  (let [default (files/lt-user-dir "settings/snippets")
+        fallback (files/lt-user-dir "snippets")]
     (if (files/exists? default)
       default
-      (files/lt-user-dir "snippets"))))
-
-
+      (if (files/exists? fallback) fallback
+        (do
+          (files/mkdir fallback)
+          fallback)))))
 
 (defn load-if-exists [path file]
   (let [fullpath (files/join path file)]

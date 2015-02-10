@@ -1,4 +1,4 @@
-(ns lt.plugins.lt-snippets
+(ns lt.plugins.snippets
   (:require [lt.object :as object]
             [lt.objs.command :as cmd]
             [lt.objs.editor.pool :as pool]
@@ -8,12 +8,10 @@
             [lt.objs.files :as files]
             [lt.util.dom :as dom]
             [clojure.string :as s]
-            [lt.plugins.lt-snippets.snippets :as snippets]
-            [lt.plugins.lt-snippets.snippet-form :as snippet-form]
-            [lt.plugins.lt-snippets.select-form :as select-form])
+            [lt.plugins.snippets.snip :as snippets]
+            [lt.plugins.snippets.snippet-form :as snippet-form]
+            [lt.plugins.snippets.select-form :as select-form])
   (:require-macros [lt.macros :refer [defui behavior]]))
-
-
 
 (defn find-pos [ed from txt]
   (->>
@@ -115,6 +113,7 @@
                         (object/raise auto-complete/hinter :refresh!))
                       (concat hints (snip-hints editor))))
 
+;; [1] I =guess= this can stay this way but feels it need change to be consistent naming convention
 (object/object* ::lt-snippets
                 :tags [:lt-snippets]
                 :name "lt-snippets")
@@ -146,6 +145,7 @@
               :exec (fn [item]
                       (object/raise lt-snippets :snippet.initiate (pool/last-active) item))})
 
+;; [2] the underscores should really be hyphens but I won't nitpick over these atm
 (cmd/command {:command :snippet.by_token
               :desc "Snippets: Expand by editor token"
               :exec (fn []
@@ -154,7 +154,7 @@
                           (clear-token ed)
                           (object/raise lt-snippets :snippet.select.maybe ed items))))})
 
-
+;; see [2]
 (cmd/command {:command :snippet.by_key
               :desc "Snippets: Invoke snippet by its key (and editor tag)"
               :hidden true

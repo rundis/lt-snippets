@@ -1,4 +1,4 @@
-(ns lt.plugins.lt-snippets.snippet-form
+(ns lt.plugins.snippets.snippet-form
   (:require [lt.object :as object]
             [lt.objs.command :as cmd]
             [lt.objs.editor.pool :as pool]
@@ -6,7 +6,7 @@
             [lt.objs.files :as files]
             [lt.util.dom :as dom]
             [clojure.string :as s]
-            [lt.plugins.lt-snippets.snippets :as snippets])
+            [lt.plugins.snippets.snip :as snippets])
   (:require-macros [lt.macros :refer [defui behavior]]))
 
 
@@ -48,8 +48,6 @@
 
 (defn resolve-inline-code [tokens]
   (map #(if (snippets/inline-code-frag? %) (inline-code-to-span %) %) tokens))
-
-
 
 (defn snippet-to-form [snippet]
   (->>

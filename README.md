@@ -24,8 +24,8 @@ You just open the command pane (ctrl-space) and select the __Snippets: Select sn
 ###Creating shortcuts
 Its quite easy setting up shortcuts, just edit your user.keymap file.
 ```clojure
-:editor.javascript { "ctrl-t ctrl-c" [(:snippet.by_key "tc")]
-                     "ctrl-a ctrl-e" [(:snippet.by_key "ae")]}
+[:editor.javascript "ctrl-t ctrl-c" (:snippet.by_key "tc")]
+[:editor.javascript "ctrl-a ctrl-e" (:snippet.by_key "ae")]
 ```
 
 ###Invoke snippet by expanding key
@@ -40,11 +40,10 @@ Caveats:
 
 Should you find in annoying, just disable the behavior:
 ```clojure
-;; in your user behaviors file
+;; in your user.behaviors file
+;; note the colon-minus `:-` prefix which removes behaviors
 
-;; in the section(/key) for subtracting behaviors
-:- {
- :editor [:lt.plugins.lt-snippets/use-local-hints] }
+[:editor :-lt.plugins.snippets/use-local-hints]
 ```
 
 
