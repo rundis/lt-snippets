@@ -113,6 +113,7 @@
                         (object/raise auto-complete/hinter :refresh!))
                       (concat hints (snip-hints editor))))
 
+;; [1] I =guess= this can stay this way but feels it need change to be consistent naming convention
 (object/object* ::lt-snippets
                 :tags [:lt-snippets]
                 :name "lt-snippets")
@@ -144,6 +145,7 @@
               :exec (fn [item]
                       (object/raise lt-snippets :snippet.initiate (pool/last-active) item))})
 
+;; [2] the underscores should really be hyphens but I won't nitpick over these atm
 (cmd/command {:command :snippet.by_token
               :desc "Snippets: Expand by editor token"
               :exec (fn []
@@ -152,7 +154,7 @@
                           (clear-token ed)
                           (object/raise lt-snippets :snippet.select.maybe ed items))))})
 
-
+;; see [2]
 (cmd/command {:command :snippet.by_key
               :desc "Snippets: Invoke snippet by its key (and editor tag)"
               :hidden true
