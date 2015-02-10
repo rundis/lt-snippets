@@ -1,4 +1,4 @@
-(ns lt.plugins.lt-snippets
+(ns lt.plugins.snippets
   (:require [lt.object :as object]
             [lt.objs.command :as cmd]
             [lt.objs.editor.pool :as pool]
@@ -8,12 +8,10 @@
             [lt.objs.files :as files]
             [lt.util.dom :as dom]
             [clojure.string :as s]
-            [lt.plugins.lt-snippets.snippets :as snippets]
-            [lt.plugins.lt-snippets.snippet-form :as snippet-form]
-            [lt.plugins.lt-snippets.select-form :as select-form])
+            [lt.plugins.snippets.snip :as snippets]
+            [lt.plugins.snippets.snippet-form :as snippet-form]
+            [lt.plugins.snippets.select-form :as select-form])
   (:require-macros [lt.macros :refer [defui behavior]]))
-
-
 
 (defn find-pos [ed from txt]
   (->>

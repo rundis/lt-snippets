@@ -1,4 +1,4 @@
-(ns lt.plugins.lt-snippets.select-form
+(ns lt.plugins.snippets.select-form
   (:require [lt.object :as object]
             [lt.objs.command :as cmd]
             [lt.objs.editor.pool :as pool]

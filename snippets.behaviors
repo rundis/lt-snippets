@@ -1,0 +1,10 @@
+{:+ {:app [(:lt.objs.plugins/load-js "helpers.js")
+           (:lt.objs.plugins/load-js "snippets_compiled.js")
+           (:lt.objs.plugins/load-css "snippets.css")]
+
+     :editor [:lt.plugins.snippets/use-local-hints]
+     :lt-snippets [:lt.plugins.snippets/maybe-select-snippet
+                   :lt.plugins.snippets/initiate-snippet
+                   :lt.plugins.snippets/complete-snippet
+                   :lt.plugins.snippets/indent-snippet]
+     :inline.snippet.form [:lt.plugins.snippets.snippet-form/remove-snippet-form]}}

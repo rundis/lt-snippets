@@ -1,6 +1,6 @@
-{:name "lt_snippets"
- :version "0.0.8"
+{:name "snippets"
+ :version "0.0.9"
  :author "Magnus Rundberget"
  :source "https://github.com/rundis/lt-snippets"
  :desc "Snippets/templates in textmate/yasnippets style for Light Table"
- :behaviors "lt_snippets.behaviors"}
+ :behaviors "snippets.behaviors"}
