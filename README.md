@@ -44,7 +44,7 @@ Should you find in annoying, just disable the behavior:
 
 ;; in the section(/key) for subtracting behaviors
 :- {
- :editor [:lt.plugins.lt-snippets/use-local-hints] }
+ :editor [:lt.plugins.snippets/use-local-hints] }
 ```
 
 
