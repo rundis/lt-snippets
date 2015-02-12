@@ -6,15 +6,22 @@ This plugin is loosely inspired by the template support in [TextMate](http://mac
 
 
 ##Installing
-The plugin can be installed using the LightTable plugin manager (or clone this repo to your plugins folder, make sure you call the folder lt-snippets!).
+The plugin can be installed using the LightTable plugin manager (or clone this repo to your plugins folder, make sure you call the folder *Snippets* !).
 You probably will need to reload behaviors for the plugin to work.
 
+(If you installed by cloning, you'll need to touch one of the cljs files from within lighttable to make sure you get compiled version of the latest source)
+
+**NOTE**
+
+If you have a version prior to 0.1.0, you will need to uninstall that before using this plugin.
 
 ##Getting started
 * Check out the [Screencast](https://www.youtube.com/watch?v=I6iuXOw3HDQ)
-* A few snippets for inspiration/trial: [My LightTable Settings](https://github.com/rundis/LightTable-settings). My settings/snippets directory uses submodules to pull in a couple of snippet collections
+* A few snippets for inspiration/trial: [My LightTable user plugin](https://github.com/rundis/lt-user-plugin). the snippets directory uses submodules to pull in a   snippet collection
     * [lt-buster-snippets](https://github.com/rundis/lt-buster-snippets) - Snippets for buster tests handy when using the [InstaBuster](https://github.com/busterjs/lt-instabuster) plugin
-    * [lt-plugin-snippets](https://github.com/rundis/lt-plugin-snippets) - Handy snippets when doing Light Table plugin development
+
+##Contributing
+Pull requests are welcome. However pls don't include the compiled files (snippets_compiled.js and snippets_compiled.js.map) in the pr.
 
 ##Features
 
@@ -24,8 +31,8 @@ You just open the command pane (ctrl-space) and select the __Snippets: Select sn
 ###Creating shortcuts
 Its quite easy setting up shortcuts, just edit your user.keymap file.
 ```clojure
-[:editor.javascript "ctrl-t ctrl-c" (:snippet.by_key "tc")]
-[:editor.javascript "ctrl-a ctrl-e" (:snippet.by_key "ae")]
+[:editor.javascript "ctrl-t ctrl-c" (:snippet.by-key "tc")]
+[:editor.javascript "ctrl-a ctrl-e" (:snippet.by-key "ae")]
 ```
 
 ###Invoke snippet by expanding key
@@ -52,8 +59,18 @@ When more than one snippet matches a given key (for a given editor type), a sele
 
 
 ###Snippet templates location
-Currently reads any .edn file residing in `$lthome/settings/snippets`. It will also walk any subdirectories.
+Default location for snippets are set to `$lthome/User/snippets`. Currently reads any .edn file residing in that directory. It will also walk any subdirectories.
 There is no limits to how many files you can have. You can put all snippets in one file, or split them into several.
+
+####Overriding location
+Just modify your user.behaviors to include:
+```clojure
+[:snippets.loader :lt.plugins.snippets.loader/set-snippet-dir
+"/Users/mrundberget/.lighttable/snippets"]
+
+;; absolute path to where you'd like your snippet root directory to be
+```
+If the directory does not exist it will be created.
 
 
 ###Snippet definition files
@@ -225,12 +242,19 @@ currPath: currPath,
 ##Roadmap
 * More keyboard friendly key conflict resolution
 * Feature to use common key prefix to allow easy setup of all snippet shortcuts ?
-* Configurable locations for snippet files
 * Variables with select values
 * Claire integration ? (Ido like selection)
 
 
 ##Version
+* 0.1.0 **Breaking changes!**
+    * Changed name to Snippets
+    * Commands changed, so you need to update any shortcuts you have defined in your keymap file
+    * Default snippet directory changed to ```$lthome/User/snippets```. If dir not exists, its created.
+    * You can override default snippet dir by behavior (see Snippet templates location section)
+    * License changed to MIT
+    * Cheers to [clojens](https://github.com/clojens) for contributions
+
 * 0.0.8 Refactored autocomplete impl with after some help from Chris
 * 0.0.7 Incubating feature: Show applicable snippets in autocomplete results
 * 0.0.6 Small bugfixes
@@ -241,4 +265,4 @@ currPath: currPath,
 * 0.0.1 Initial release with fairly usable features
 
 ##License
-GPLv3 license, same as [Light Table](https://github.com/LightTable/LightTable). See LICENSE.md for the full text.
+MIT license, same as [Light Table](https://github.com/LightTable/LightTable). See LICENSE.md for the full text.

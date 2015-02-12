@@ -8,7 +8,7 @@
             [lt.objs.files :as files]
             [lt.util.dom :as dom]
             [clojure.string :as s]
-            [lt.plugins.snippets.snip :as snippets]
+            [lt.plugins.snippets.loader :as loader]
             [lt.plugins.snippets.snippet-form :as snippet-form]
             [lt.plugins.snippets.select-form :as select-form])
   (:require-macros [lt.macros :refer [defui behavior]]))
@@ -21,6 +21,8 @@
    (map #(dissoc (assoc % :ch (.indexOf (:text %) txt)) :text))
    (first)))
 
+
+
 (defn ->token [ed]
   (editor/->token ed (editor/->cursor ed)))
 
@@ -30,7 +32,9 @@
     (editor/replace ed {:line line :ch (:start token)} {:line line :ch (:end token)} "")))
 
 (defn snippet-by-token [ed]
-  (snippets/by (:string (->token ed)) (:tags @ed) (snippets/all)))
+  (loader/by (:string (->token ed)) (:tags @ed) (loader/all)))
+
+
 
 
 (behavior ::indent-snippet
@@ -70,7 +74,7 @@
           :reaction (fn [this ed item]
                       (let [pos (editor/->cursor ed)
                             snippet (:snippet item)]
-                        (if (snippets/tabstops? snippet)
+                        (if (snippet-form/tabstops? snippet)
                           (object/raise this :snippet.complete ed snippet)
                           (snippet-form/make {:cb-obj this
                                               :ed ed
@@ -90,18 +94,6 @@
                                              :pos (editor/->cursor ed)
                                              :items items})))))
 
-(defn sel-cb [ed fun c]
-  (fun "")
-  (object/raise lt-snippets :snippet.initiate ed (get (js->clj c) "item")))
-
-
-(defn snip-hints [ed]
-    (flatten
-     (map #(vec [#js {:select (partial sel-cb ed)
-                      :text (str (:key %) " - " (:name %) " (snip)")
-                      :completion (:key %)
-                      :item %}])
-          (snippets/by-mode (:tags @ed) (snippets/all)))))
 
 
 (behavior ::use-local-hints
@@ -113,12 +105,26 @@
                         (object/raise auto-complete/hinter :refresh!))
                       (concat hints (snip-hints editor))))
 
-;; [1] I =guess= this can stay this way but feels it need change to be consistent naming convention
-(object/object* ::lt-snippets
-                :tags [:lt-snippets]
-                :name "lt-snippets")
 
-(def lt-snippets (object/create ::lt-snippets))
+(object/object* ::snippets
+                :tags [:snippets]
+                :name "snippets")
+
+(def snip (object/create ::snippets))
+
+
+(defn sel-cb [ed fun c]
+  (fun "")
+  (object/raise snip :snippet.initiate ed (get (js->clj c) "item")))
+
+
+(defn snip-hints [ed]
+    (flatten
+     (map #(vec [#js {:select (partial sel-cb ed)
+                      :text (str (:key %) " - " (:name %) " (snip)")
+                      :completion (:key %)
+                      :item %}])
+          (loader/by-mode (:tags @ed) (loader/all)))))
 
 
 (behavior ::set-selected
@@ -132,7 +138,7 @@
 
 
 (def add-selector
-  (selector {:items snippets/all-keymapped
+  (selector {:items loader/all-keymapped
              :key :name
              :transform #(str "<p>" (:name %4) "</p>"
                               "<p class='binding'>"
@@ -143,23 +149,21 @@
               :desc "Snippets: Select snippet"
               :options add-selector
               :exec (fn [item]
-                      (object/raise lt-snippets :snippet.initiate (pool/last-active) item))})
+                      (object/raise snip :snippet.initiate (pool/last-active) item))})
 
-;; [2] the underscores should really be hyphens but I won't nitpick over these atm
-(cmd/command {:command :snippet.by_token
+(cmd/command {:command :snippet.by-token
               :desc "Snippets: Expand by editor token"
               :exec (fn []
                       (when-let [ed (pool/last-active)]
                         (when-let [items (seq (snippet-by-token ed))]
                           (clear-token ed)
-                          (object/raise lt-snippets :snippet.select.maybe ed items))))})
+                          (object/raise snip :snippet.select.maybe ed items))))})
 
-;; see [2]
-(cmd/command {:command :snippet.by_key
+(cmd/command {:command :snippet.by-key
               :desc "Snippets: Invoke snippet by its key (and editor tag)"
               :hidden true
               :exec (fn [key]
                       (when-let [ed (pool/last-active)]
-                        (object/raise lt-snippets :snippet.select.maybe ed (snippets/by key (:tags @ed) (snippets/all)))))})
+                        (object/raise snip :snippet.select.maybe ed (loader/by key (:tags @ed) (loader/all)))))})
 
 

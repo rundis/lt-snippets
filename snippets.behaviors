@@ -1,10 +1,11 @@
-{:+ {:app [(:lt.objs.plugins/load-js "helpers.js")
-           (:lt.objs.plugins/load-js "snippets_compiled.js")
-           (:lt.objs.plugins/load-css "snippets.css")]
+[[:app :lt.objs.plugins/load-js "helpers.js"]
+ [:app :lt.objs.plugins/load-js "snippets_compiled.js"]
+ [:app :lt.objs.plugins/load-css "snippets.css"]
 
-     :editor [:lt.plugins.snippets/use-local-hints]
-     :lt-snippets [:lt.plugins.snippets/maybe-select-snippet
-                   :lt.plugins.snippets/initiate-snippet
-                   :lt.plugins.snippets/complete-snippet
-                   :lt.plugins.snippets/indent-snippet]
-     :inline.snippet.form [:lt.plugins.snippets.snippet-form/remove-snippet-form]}}
+
+ [:editor :lt.plugins.snippets/use-local-hints]
+ [:snippets :lt.plugins.snippets/maybe-select-snippet]
+ [:snippets :lt.plugins.snippets/initiate-snippet]
+ [:snippets :lt.plugins.snippets/complete-snippet]
+ [:snippets :lt.plugins.snippets/indent-snippet]
+ [:inline.snippet.form :lt.plugins.snippets.snippet-form/remove-snippet-form]]

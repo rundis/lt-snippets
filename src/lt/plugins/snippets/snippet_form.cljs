@@ -10,8 +10,88 @@
   (:require-macros [lt.macros :refer [defui behavior]]))
 
 
+
+
+(defn comp-tabstop [a b]
+  (cond
+   (and (:placeholder a) (not (:placeholder b))) true
+   (and (:placeholder b) (not (:placeholder a))) false
+   :else false))
+
+
+(def patterns
+  {:ts-ph-js  "\\$\\{\\d+\\:__[^\\x0A\\x0D\\u2028\\u2029\\__]*__\\}"
+   :ts-ph "\\$\\{\\d+\\:[^\\x0A\\x0D\\u2028\\u2029\\}]*\\}"
+   :ts "\\$\\d+"
+   :frag "\\$\\{__[^\\x0A\\x0D\\u2028\\u2029\\__]*__\\}"
+   :js-code "__([^\\x0A\\x0D\\u2028\\u2029\\__]*)__"
+   :ts-ph-js-group "\\$\\{\\d+\\:(__[^\\x0A\\x0D\\u2028\\u2029\\__]*__)\\}"
+   :ts-ph-group "\\$\\{\\d+\\:([^\\x0A\\x0D\\u2028\\u2029\\}]*)\\}"
+   })
+
+(defn pattern-join [ps j]
+  (s/join j (clj->js (map #(% patterns) ps))))
+
+
+(defn get-tabstops [snippet]
+  (->>
+   (re-seq (re-pattern (pattern-join [:ts-ph-js :ts-ph :ts] "|")) snippet)
+   (filter #(not (= % "$0")))
+   (map #(hash-map :num (re-find #"\d+" %)
+                   :placeholder (when-let [ph  (re-find (re-pattern (pattern-join [:ts-ph-js-group :ts-ph-group] "|")) %)]
+                                  (or (nth ph 1) (last ph)))
+                   :text %))
+   (group-by :num)
+   (map (fn [ts]
+          (map-indexed (fn [idx tsi]
+                         (if (> idx 0)
+                           (assoc tsi :mirrored true)
+                           tsi))
+                       (sort (comp comp-tabstop) (last ts)))))
+   (mapcat identity)))
+
+
+(defn tabstops? [snippet]
+  (empty? (get-tabstops snippet)))
+
+
+(defn tokenize [snippet]
+  (js->clj (.split
+            snippet
+            (re-pattern (str "(" (pattern-join [:ts-ph-js :ts-ph :ts :frag] "|") ")")))))
+
+(defn safe-eval [frag]
+  (try
+    (js/window.eval frag)
+    (catch :default e
+      (console/error (str "Failed to evaluate js: " frag)))))
+
+
+(defn resolve-placeholder [ph]
+  (if-let [code (re-find (re-pattern (:js-code patterns)) ph)]
+    (safe-eval (last code))
+    ph))
+
+
+(defn inline-code-frag? [frag]
+  (re-seq (re-pattern (:frag patterns)) frag))
+
+(defn mirrored-transformation? [mirror]
+  (re-seq (re-pattern (:ts-ph-js patterns)) mirror))
+
+
+(defn resolve-mirror [mirror, v]
+  (if-let [code (re-find (re-pattern (:js-code patterns)) mirror)]
+    (let [js-fun  (safe-eval (last code))]
+      (if js-fun
+        (js-fun v)
+        (console/error (str "Error resolving mirror. Expression does not resolve to a (valid) function: " (last code)))))
+    v))
+
+
+
 (defn tabstop-to-input [tabstop]
-  (let [ph (snippets/resolve-placeholder (:placeholder tabstop))]
+  (let [ph (resolve-placeholder (:placeholder tabstop))]
     (str "<span contenteditable='true'"
          " data-ph='" (if (:placeholder tabstop) ph (str "#" (:num tabstop))) "'"
          " data-ts='" (:text tabstop) "'"
@@ -25,8 +105,8 @@
 
 
 (defn replace-tabstops [snippet]
-  (loop [tokens (vec (snippets/tokenize snippet))
-         tabstops (snippets/get-tabstops snippet)]
+  (loop [tokens (vec (tokenize snippet))
+         tabstops (get-tabstops snippet)]
     (cond
      (empty? tabstops) tokens
      :else (let [tabstop (first tabstops)
@@ -43,11 +123,11 @@
 
 
 (defn inline-code-to-span [frag]
-  (str "<div class='replace codeblock' data-ts='" frag "'>" (snippets/resolve-placeholder frag) "</div>"))
+  (str "<div class='replace codeblock' data-ts='" frag "'>" (resolve-placeholder frag) "</div>"))
 
 
 (defn resolve-inline-code [tokens]
-  (map #(if (snippets/inline-code-frag? %) (inline-code-to-span %) %) tokens))
+  (map #(if (inline-code-frag? %) (inline-code-to-span %) %) tokens))
 
 (defn snippet-to-form [snippet]
   (->>
@@ -70,8 +150,8 @@
 
 (defn set-mirror-value [mirr v]
   (let [ts (dom/attr mirr "data-ts")]
-    (if (snippets/mirrored-transformation? ts)
-      (dom/html mirr (snippets/resolve-mirror ts v))
+    (if (mirrored-transformation? ts)
+      (dom/html mirr (resolve-mirror ts v))
       (dom/html mirr v))))
 
 

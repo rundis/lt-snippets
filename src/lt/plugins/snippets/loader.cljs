@@ -1,4 +1,4 @@
-(ns lt.plugins.snippets.snip
+(ns lt.plugins.snippets.loader
   (:require [lt.object :as object]
             [lt.objs.files :as files]
             [lt.objs.keyboard :as keyboard]
@@ -7,23 +7,42 @@
             [clojure.string :as s])
   (:require-macros [lt.macros :refer [defui behavior]]))
 
-(def snippet-dir (files/lt-user-dir "snippets"))
+
+
+
+(behavior ::set-snippet-dir
+          :triggers #{:object.instant}
+          :desc "Snippets: Set root directory for snippets"
+          :type :user
+          :params [{:label "snippet-dir"}]
+          :exclusive true
+          :reaction (fn [this snippet-dir]
+                      (object/merge! this {::snippet-dir snippet-dir})))
+
+(object/object* ::loader
+                :tags [:snippets.loader]
+                :name "loader")
+
+(def loader (object/create ::loader))
+
+
 
 (defn get-snippet-dir []
-  (let [default (files/lt-user-dir "settings/snippets")
-        fallback (files/lt-user-dir "snippets")]
-    (if (files/exists? default)
-      default
-      (if (files/exists? fallback) fallback
-        (do
-          (files/mkdir fallback)
-          fallback)))))
+  (let [snip-dir (or (::snippet-dir @loader) (files/lt-user-dir "User/snippets"))]
+    (if (files/exists? snip-dir)
+      snip-dir
+      (do
+        (console/log (str "Snippet dir does not exists. Creating: " snip-dir))
+        (files/mkdir snip-dir)
+        snip-dir))))
+
 
 (defn load-if-exists [path file]
   (let [fullpath (files/join path file)]
     (if-not (files/exists? fullpath)
       fullpath
       (s/replace(files/bomless-read fullpath) #"\n$" ""))))
+
 
 
 (defn resolve-modes [a b]
@@ -112,7 +131,7 @@
                                  (hash-map :tag (first keygroup)
                                            :shortcut (first km)
                                            :key (last (first (first (rest km))))))
-                               (filter #(.contains (str %) ":snippet.by_key") (first (rest keygroup)))))
+                               (filter #(.contains (str %) ":snippet.by-key") (first (rest keygroup)))))
                         (seq @keyboard/keys))))
 
 
@@ -122,82 +141,3 @@
     (map (fn [snip]
            (assoc snip :shortcut (when-let [sc (some #(if (= (:key snip) (:key %)) %)  shortcuts)] (:shortcut sc))))
          snippets)))
-
-
-(defn comp-tabstop [a b]
-  (cond
-   (and (:placeholder a) (not (:placeholder b))) true
-   (and (:placeholder b) (not (:placeholder a))) false
-   :else false))
-
-
-(def patterns
-  {:ts-ph-js  "\\$\\{\\d+\\:__[^\\x0A\\x0D\\u2028\\u2029\\__]*__\\}"
-   :ts-ph "\\$\\{\\d+\\:[^\\x0A\\x0D\\u2028\\u2029\\}]*\\}"
-   :ts "\\$\\d+"
-   :frag "\\$\\{__[^\\x0A\\x0D\\u2028\\u2029\\__]*__\\}"
-   :js-code "__([^\\x0A\\x0D\\u2028\\u2029\\__]*)__"
-   :ts-ph-js-group "\\$\\{\\d+\\:(__[^\\x0A\\x0D\\u2028\\u2029\\__]*__)\\}"
-   :ts-ph-group "\\$\\{\\d+\\:([^\\x0A\\x0D\\u2028\\u2029\\}]*)\\}"
-   })
-
-(defn pattern-join [ps j]
-  (s/join j (clj->js (map #(% patterns) ps))))
-
-
-(defn get-tabstops[snippet]
-  (->>
-   (re-seq (re-pattern (pattern-join [:ts-ph-js :ts-ph :ts] "|")) snippet)
-   (filter #(not (= % "$0")))
-   (map #(hash-map :num (re-find #"\d+" %)
-                   :placeholder (when-let [ph  (re-find (re-pattern (pattern-join [:ts-ph-js-group :ts-ph-group] "|")) %)]
-                                  (or (nth ph 1) (last ph)))
-                   :text %))
-   (group-by :num)
-   (map (fn [ts]
-          (map-indexed (fn [idx tsi]
-                         (if (> idx 0)
-                           (assoc tsi :mirrored true)
-                           tsi))
-                       (sort (comp comp-tabstop) (last ts)))))
-   (mapcat identity)))
-
-
-(defn tabstops? [snippet]
-  (empty? (get-tabstops snippet)))
-
-
-(defn tokenize [snippet]
-  (js->clj (.split
-            snippet
-            (re-pattern (str "(" (pattern-join [:ts-ph-js :ts-ph :ts :frag] "|") ")")))))
-
-(defn safe-eval [frag]
-  (try
-    (js/window.eval frag)
-    (catch :default e
-      (console/error (str "Failed to evaluate js: " frag)))))
-
-
-(defn resolve-placeholder [ph]
-  (if-let [code (re-find (re-pattern (:js-code patterns)) ph)]
-    (safe-eval (last code))
-    ph))
-
-
-(defn inline-code-frag? [frag]
-  (re-seq (re-pattern (:frag patterns)) frag))
-
-(defn mirrored-transformation? [mirror]
-  (re-seq (re-pattern (:ts-ph-js patterns)) mirror))
-
-
-(defn resolve-mirror [mirror, v]
-  (if-let [code (re-find (re-pattern (:js-code patterns)) mirror)]
-    (let [js-fun  (safe-eval (last code))]
-      (if js-fun
-        (js-fun v)
-        (console/error (str "Error resolving mirror. Expression does not resolve to a (valid) function: " (last code)))))
-    v))
-
-
