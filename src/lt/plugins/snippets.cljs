@@ -13,11 +13,15 @@
             [lt.plugins.snippets.select-form :as select-form])
   (:require-macros [lt.macros :refer [defui behavior]]))
 
+(defn str-contains [a b]
+  (> (.indexOf a b) -1 ))
+
+
 (defn find-pos [ed from txt]
   (->>
    (range (:line from) (+ 1 (:line (editor/->cursor ed))))
    (map #(hash-map :line % :text (.-text (editor/line-handle ed %))))
-   (filter #(.contains (:text %) txt))
+   (filter #(str-contains (:text %) txt))
    (map #(dissoc (assoc % :ch (.indexOf (:text %) txt)) :text))
    (first)))
 
@@ -58,7 +62,7 @@
                             info {:ed ed :from pos}
                             cur (fn [e] (editor/->cursor e))]
                         (editor/insert-at-cursor ed snippet)
-                         (if-not (.contains snippet "$0")
+                         (if-not (str-contains snippet "$0")
                            (when-not no-indent
                             (object/raise this :snippet.indent (assoc info :to (cur ed) :focuspos (cur ed))))
                           (when-let [cursor (find-pos ed pos "$0")]

@@ -125,13 +125,16 @@
    (filter (partial satisfies-modes? modes))))
 
 
+(defn str-contains [a b]
+  (> (.indexOf a b) -1 ))
+
 (defn get-shortcuts []
   (mapcat identity (map (fn [keygroup]
                           (map (fn [km]
                                  (hash-map :tag (first keygroup)
                                            :shortcut (first km)
                                            :key (last (first (first (rest km))))))
-                               (filter #(.contains (str %) ":snippet.by-key") (first (rest keygroup)))))
+                               (filter #(str-contains (str %) ":snippet.by-key") (first (rest keygroup)))))
                         (seq @keyboard/keys))))
 
 

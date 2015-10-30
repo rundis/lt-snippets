@@ -247,6 +247,7 @@ currPath: currPath,
 
 
 ##Version
+* 0.1.1 Fix to work with LT 0.8-alpha
 * 0.1.0 **Breaking changes!**
     * Changed name to Snippets
     * Commands changed, so you need to update any shortcuts you have defined in your keymap file
